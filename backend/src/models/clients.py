@@ -1,13 +1,18 @@
-from sqlalchemy import Column, Integer, String, Numeric
-from config.database import SPBase
+from sqlalchemy import Column, Integer, String, Numeric, UniqueConstraint
+from ..config.database import SPBase
 
 class Client(SPBase):
     __tablename__ = "clients"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    phone = Column(String, unique=True, nullable=False)
+    __table_args__ = (
+        UniqueConstraint("email", name="uq_clients_email"),
+        UniqueConstraint("phone", name="uq_clients_phone"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(120), nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    phone = Column(String(50), unique=True, nullable=False)
     balance = Column(Numeric(12, 2), default=0)
 
     def __repr__(self):
