@@ -21,8 +21,8 @@ SRC_PATH = ROOT_DIRECTORY / "src"
 sys.path.insert(0, str(SRC_PATH))
 
 #import models and db
-from src.config.database import SPBase, DB_URL
-import models
+from src.config.database import SPBase, DB_URL, db_engine
+from src import models
 
 # set metadata for autogeneration with alembic
 target_metadata = SPBase.metadata
@@ -43,20 +43,11 @@ def run_migrations_offline():
         context.run_migrations()
 
 def run_migrations_online():
-    """Run migrations in 'online' mode."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
+    connectable = db_engine
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-        )
-
+        context.configure(connection=connection,
+                          target_metadata=target_metadata,
+                          compare_type=True)
         with context.begin_transaction():
             context.run_migrations()
 

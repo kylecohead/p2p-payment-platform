@@ -21,8 +21,8 @@ LocalSession = sessionmaker(autoflush=False, autocommit=False, bind=db_engine)
 SPBase = declarative_base()
 
 def get_db(): 
-    db = LocalSession
+    db = LocalSession()
     try:
         yield db
     finally:
-        db.close_all()
+        db.close()
