@@ -1,0 +1,26 @@
+.send-container {
+  max-width: 300px;
+  margin: 2rem auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.send-container h2 {
+  margin-bottom: 1rem;
+}
+.send-form div {
+  margin-bottom: 12px;
+}
+.send-form label {
+  display: block;
+  margin-bottom: 4px;
+}
+.send-form input {
+  width: 100%;
+  padding: 6px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+.send-form button {
+  margin-right: 8px;
+}
