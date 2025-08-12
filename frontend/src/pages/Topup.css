@@ -1,0 +1,26 @@
+.topup-container {
+  max-width: 300px;
+  margin: 2rem auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.topup-container h2 {
+  margin-bottom: 1rem;
+}
+.topup-form div {
+  margin-bottom: 12px;
+}
+.topup-form label {
+  display: block;
+  margin-bottom: 4px;
+}
+.topup-form input {
+  width: 100%;
+  padding: 6px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+.topup-form button {
+  margin-right: 8px;
+}
