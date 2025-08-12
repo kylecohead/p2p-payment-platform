@@ -1,0 +1,31 @@
+.home {
+  border: 2px solid BLUE;
+  padding: 30px;
+  margin: 20px;
+  border-radius: 10px; 
+}
+.account {
+ text-align: left;
+}
+.balance-section{
+  width: 100%;
+  text-align: left;
+}
+.button-section {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.button-section button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.logout-button {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
