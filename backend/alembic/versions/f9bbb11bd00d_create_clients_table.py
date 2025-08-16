@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column('name', sa.String(), nullable=False),
         sa.Column('email', sa.String(), nullable=False, unique=True),
         sa.Column('phone', sa.String(), nullable=False, unique=True),
-        sa.Column('balance', sa.Numeric(12, 2), server_default='0', nullable=False),
+        sa.Column('balance', sa.Numeric(12, 2), server_default="0", nullable=False),
     )
     # (Removed separate id index; PK already indexed)
 
