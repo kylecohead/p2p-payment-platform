@@ -1,20 +1,38 @@
 import { useState } from "react";
 import "./Send.css";
 import { useNavigate } from "react-router-dom";
+import ApiService from "../services/api";
 
 export default function Send() {
-  const [account, setAccount] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    try {
+      const userData = JSON.parse(localStorage.getItem('currentUser'));
+      if (!userData) {
+        navigate('/login');
+        return;
+      }
+
+      await ApiService.sendMoney(userData.id, amount, recipientEmail);
+      
+      // Update user data in localStorage
+      const updatedUser = await ApiService.getClient(userData.id);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message || 'Send failed. Please try again.');
+    }
   };
 
   const handleCancel = () => {
-    setAccount("");
+    setRecipientEmail("");
     setAmount("");
     navigate("/home");
   };
@@ -28,13 +46,14 @@ export default function Send() {
       {!submitted ? (
         <>
           <h2>Send Money</h2>
+          {error && <div style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
           <form className="send-form" onSubmit={handleSubmit}>
             <div>
-              <label>Account Number:</label>
+              <label>Recipient Email:</label>
               <input
-                type="text"
-                value={account}
-                onChange={e => setAccount(e.target.value)}
+                type="email"
+                value={recipientEmail}
+                onChange={e => setRecipientEmail(e.target.value)}
                 required
               />
             </div>
@@ -57,7 +76,7 @@ export default function Send() {
         <div style={{ textAlign: "center" }}>
           <h2>Success!</h2>
           <p>
-            Sent <strong>R{amount}</strong> to account <strong>{account}</strong>.
+            Sent <strong>${amount}</strong> to <strong>{recipientEmail}</strong>.
           </p>
           <button onClick={handleReturnHome}>Return to Home</button>
         </div>

@@ -1,15 +1,33 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ApiService from "../services/api";
 import "./Topup.css";
 
 export default function Topup() {
   const [amount, setAmount] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    try {
+      const userData = JSON.parse(localStorage.getItem('currentUser'));
+      if (!userData) {
+        navigate('/login');
+        return;
+      }
+
+      await ApiService.topupBalance(userData.id, amount);
+      
+      // Update user data in localStorage
+      const updatedUser = await ApiService.getClient(userData.id);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      setSubmitted(true);
+    } catch (err) {
+      setError('Topup failed. Please try again.');
+    }
   };
 
   const handleCancel = () => {
@@ -26,6 +44,7 @@ export default function Topup() {
       {!submitted ? (
         <>
           <h2>Top Up</h2>
+          {error && <div style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
           <form className="topup-form" onSubmit={handleSubmit}>
             <div>
               <label>Amount:</label>
