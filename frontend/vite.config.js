@@ -5,8 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    headers: {
-      'Content-Security-Policy': "script-src 'self' 'unsafe-eval'; object-src 'none';"
-    }
+    // Remove CSP headers in development to avoid conflicts
+    // You can add them back for production builds
+    port: 5173,
+    host: true
+  },
+  build: {
+    // Enable source maps for better debugging
+    sourcemap: true
   }
 })
