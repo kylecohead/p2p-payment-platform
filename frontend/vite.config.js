@@ -5,13 +5,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Remove CSP headers in development to avoid conflicts
-    // You can add them back for production builds
     port: 5173,
-    host: true
+    host: '127.0.0.1',
+    strictPort: false,
+    // Explicitly disable CSP and security headers
+    headers: {
+      'Content-Security-Policy': '',
+      'X-Content-Type-Options': '',
+      'X-Frame-Options': '',
+      'Referrer-Policy': ''
+    }
   },
-  build: {
-    // Enable source maps for better debugging
-    sourcemap: true
+  optimizeDeps: {
+    exclude: []
   }
 })
