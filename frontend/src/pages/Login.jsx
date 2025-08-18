@@ -1,27 +1,58 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import ApiService from "../services/api";
 import './Login.css';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const userData = await ApiService.login(email, password);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      navigate('/home');
+    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+    }
+  };
 
   return (
     <div className="login-page">
       <div className="login-card">
         <h2>{isLogin ? "Login" : "Sign Up"}</h2>
+        {error && <div style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
         {isLogin ? (
-          <form>
+          <form onSubmit={handleLogin}>
             <div>
-              <label htmlFor="username" className="form-text">Username</label>
-              <input type="text" id="username" name="username" className="input-box" required />
+              <label htmlFor="email" className="form-text">Email</label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                className="input-box" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required 
+              />
             </div>
             <div>
               <label htmlFor="password" className="form-text">Password</label>
-              <input type="password" id="password" name="password" className="input-box" required  />
+              <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                className="input-box" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required  
+              />
             </div>
-            <Link to="/home">
-              <button type="submit" className="submit-button">Login</button>
-            </Link>
+            <button type="submit" className="submit-button">Login</button>
           </form>
         ) : (
           <form>
@@ -37,9 +68,7 @@ export default function Login() {
               <label htmlFor="confirm-password" className="form-text">Confirm Password</label>
               <input type="password" id="confirm-password" name="confirmPassword" className="input-box" required />
             </div>
-            <Link to="/home">
-              <button type="submit" className="submit-button">Sign Up</button>
-            </Link>
+            <button type="submit" className="submit-button">Sign Up</button>
             
           </form>
         )}

@@ -1,6 +1,6 @@
 from decimal import Decimal
-from backend.src.config.database import LocalSession
-from backend.src.models.clients import Client
+from src.config.database import LocalSession
+from src.models.clients import Client
 
 SEED_CLIENTS = [
     {"name": "Alice ", "email": "alice@gmail.com", "phone": "111111", "balance": Decimal("0")},
