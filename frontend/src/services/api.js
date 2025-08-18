@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://100.70.151.74:8000';
 
 class ApiService {
   async login(email, password) {

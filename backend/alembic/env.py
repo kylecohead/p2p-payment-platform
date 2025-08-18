@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 config = context.config
 
 #interpret config file
-fileConfig(config.config_file_name)
+fileConfig(config.config_file_name) #type: ignore
 
 # load .env like int database.py
 ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
@@ -27,7 +27,7 @@ from src import models
 # set metadata for autogeneration with alembic
 target_metadata = SPBase.metadata
 
-config.set_main_option("sqlalchemy.url", DB_URL)
+config.set_main_option("sqlalchemy.url", DB_URL) # type: ignore
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""

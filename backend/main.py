@@ -12,7 +12,7 @@ app = FastAPI()
 # Allow CORS for frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend URL
+    allow_origins=["http://100.70.151.74:*", "http://localhost:*", "*"],  # Allow Tailscale IP and localhost
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
