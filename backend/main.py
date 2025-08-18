@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from src.config.database import get_db
 from src.models.clients import Client
 from pydantic import BaseModel
+from pydantic import PositiveFloat
 from typing import Optional
 from decimal import Decimal
 
@@ -23,6 +24,12 @@ class ClientLogin(BaseModel):
     email: str
     password: str
 
+class ClientSignup(BaseModel):
+    name: str
+    email: str
+    phone: str
+    password: str
+
 class ClientResponse(BaseModel):
     id: int
     name: str
@@ -31,7 +38,7 @@ class ClientResponse(BaseModel):
     balance: float
 
 class TransactionRequest(BaseModel):
-    amount: float
+    amount: PositiveFloat
     recipient_email: Optional[str] = None
 
 @app.get("/")
@@ -52,6 +59,44 @@ def login(login_data: ClientLogin, db: Session = Depends(get_db)):
         "email": client.email,
         "phone": client.phone,
         "balance": float(balance_value) if balance_value is not None else 0.0
+    }
+
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Utility function to hash passwords
+#def hash_password(password: str) -> str:
+#    return pwd_context.hash(password)
+
+@app.post("/api/signup")
+def signup(signup_data: ClientSignup, db: Session = Depends(get_db)):
+    # Check if the email already exists
+    existing_client = db.query(Client).filter(Client.email == signup_data.email).first()
+    if existing_client:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Hash the password before saving
+    # hashed_password = hash_password(signup_data.password)
+
+    # Create a new client and add to the database
+    new_client = Client(
+        name=signup_data.name,
+        email=signup_data.email,
+        phone=signup_data.phone,
+       # password=hashed_password,  # Save hashed password
+        balance=0  # Set initial balance to 0
+    )
+
+    db.add(new_client)
+    db.commit()
+    db.refresh(new_client)
+
+    return {
+        "message": "Client created successfully",
+        "id": new_client.id,
+        "name": new_client.name,
+        "email": new_client.email,
+        "phone": new_client.phone,
+        "balance": new_client.balance
     }
 
 @app.get("/api/client/{client_id}")
@@ -125,6 +170,33 @@ def send_money(client_id: int, transaction: TransactionRequest, db: Session = De
     return {
         "message": f"Successfully sent {transaction.amount} to {recipient.name}",
         "new_balance": float(sender_balance_value) if sender_balance_value is not None else 0.0
+    }
+
+@app.post("/api/receive/{client_id}")
+def receive_money(client_id: int, transaction: TransactionRequest, db: Session = Depends(get_db)):
+    if not transaction.amount:
+        raise HTTPException(status_code=400, detail="Amount is required")
+
+    # Get recipient
+    recipient = db.query(Client).filter(Client.id == client_id).first()
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    # Add balance to recipient
+    current_balance = getattr(recipient, 'balance', Decimal('0')) or Decimal('0')
+    transaction_amount = Decimal(str(transaction.amount))
+    new_balance = current_balance + transaction_amount
+
+    # Update recipient's balance
+    setattr(recipient, 'balance', new_balance)
+    db.commit()
+    db.refresh(recipient)  # Refresh the recipient’s data
+
+    # Return updated balance to the client
+    balance_value = getattr(recipient, 'balance', 0)
+    return {
+        "message": f"Successfully received {transaction.amount}",
+        "new_balance": float(balance_value) if balance_value is not None else 0.0
     }
 
 if __name__ == "__main__":
