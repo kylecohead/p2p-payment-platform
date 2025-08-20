@@ -57,8 +57,16 @@ export default function Login() {
         ) : (
           <form>
             <div>
-              <label htmlFor="new-username" className="form-text">Username</label>
-              <input type="text" id="new-username" name="username" className="input-box" required />
+              <label htmlFor="new-name" className="form-text">Name</label>
+              <input type="text" id="new-name" name="name" className="input-box" required />
+            </div>
+            <div>
+              <label htmlFor="new-email" className="form-text">Email</label>
+              <input type="email" id="new-email" name="email" className="input-box" required />
+            </div>
+            <div>
+              <label htmlFor="new-phone" className="form-text">Phone Number</label>
+              <input type="tel" id="new-phone" name="phone" className="input-box" required />
             </div>
             <div>
               <label htmlFor="new-password" className="form-text">Password</label>
