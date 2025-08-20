@@ -51,7 +51,7 @@ def login(login_data: ClientLogin, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.email == login_data.email).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    
+
     balance_value = getattr(client, 'balance', 0)
     return {
         "id": client.id,
@@ -104,7 +104,7 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    
+
     balance_value = getattr(client, 'balance', 0)
     return {
         "id": client.id,
@@ -119,13 +119,13 @@ def topup_balance(client_id: int, transaction: TransactionRequest, db: Session =
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    
+
     current_balance = getattr(client, 'balance', Decimal('0')) or Decimal('0')
     new_balance = current_balance + Decimal(str(transaction.amount))
     setattr(client, 'balance', new_balance)
     db.commit()
     db.refresh(client)
-    
+
     balance_value = getattr(client, 'balance', 0)
     return {
         "message": f"Successfully topped up {transaction.amount}",
@@ -136,77 +136,49 @@ def topup_balance(client_id: int, transaction: TransactionRequest, db: Session =
 def send_money(client_id: int, transaction: TransactionRequest, db: Session = Depends(get_db)):
     if not transaction.recipient_email:
         raise HTTPException(status_code=400, detail="Recipient email required")
-    
+
     # Get sender
     sender = db.query(Client).filter(Client.id == client_id).first()
     if not sender:
         raise HTTPException(status_code=404, detail="Sender not found")
-    
+
     # Get recipient
     recipient = db.query(Client).filter(Client.email == transaction.recipient_email).first()
     if not recipient:
         raise HTTPException(status_code=404, detail="Recipient not found")
-    
+
     # Check balance
     sender_balance = getattr(sender, 'balance', Decimal('0')) or Decimal('0')
     transaction_amount = Decimal(str(transaction.amount))
-    
+
     if sender_balance < transaction_amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
-    
+
     # Transfer money
     new_sender_balance = sender_balance - transaction_amount
     recipient_balance = getattr(recipient, 'balance', Decimal('0')) or Decimal('0')
     new_recipient_balance = recipient_balance + transaction_amount
-    
+
     setattr(sender, 'balance', new_sender_balance)
     setattr(recipient, 'balance', new_recipient_balance)
-    
+
     db.commit()
     db.refresh(sender)
     db.refresh(recipient)
-    
+
     sender_balance_value = getattr(sender, 'balance', 0)
     return {
         "message": f"Successfully sent {transaction.amount} to {recipient.name}",
         "new_balance": float(sender_balance_value) if sender_balance_value is not None else 0.0
     }
-
-@app.post("/api/receive/{client_id}")
-def receive_money(client_id: int, transaction: TransactionRequest, db: Session = Depends(get_db)):
-    if not transaction.amount:
-        raise HTTPException(status_code=400, detail="Amount is required")
-
-    # Get recipient
-    recipient = db.query(Client).filter(Client.id == client_id).first()
-    if not recipient:
-        raise HTTPException(status_code=404, detail="Recipient not found")
-
-    # Add balance to recipient
-    current_balance = getattr(recipient, 'balance', Decimal('0')) or Decimal('0')
-    transaction_amount = Decimal(str(transaction.amount))
-    new_balance = current_balance + transaction_amount
-
-    # Update recipient's balance
-    setattr(recipient, 'balance', new_balance)
-    db.commit()
-    db.refresh(recipient)  # Refresh the recipient’s data
-
-    # Return updated balance to the client
-    balance_value = getattr(recipient, 'balance', 0)
-    return {
-        "message": f"Successfully received {transaction.amount}",
-        "new_balance": float(balance_value) if balance_value is not None else 0.0
-    }
-
 if __name__ == "__main__":
     import uvicorn
     import os
     from dotenv import load_dotenv
-    
+
     load_dotenv()
     host = os.getenv("API_HOST", "0.0.0.0")
     port = int(os.getenv("API_PORT", 8000))
-    
+
     print(f"Starting server on {host}:{port}")
     uvicorn.run(app, host=host, port=port)
