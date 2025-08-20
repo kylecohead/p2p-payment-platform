@@ -44,7 +44,7 @@ export default function Login() {
     }
 
     try {
-      const userData = await ApiService.signup(name, email, phone, password);
+      const userData = await ApiService.signup(name, rawEmail, phone, pwd);
 
       localStorage.setItem("currentUser", JSON.stringify(userData));
       navigate("/home");
