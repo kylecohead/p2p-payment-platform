@@ -1,0 +1,29 @@
+# Node
+node_modules/
+dist/
+# Environment
+.env
+.env.*
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Mac
+.DS_Store
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+coverage/
