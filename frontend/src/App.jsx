@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Topup from "./pages/Topup";
 import Send from "./pages/Send";
+import Payments from './pages/Payments';
 import Layout from './components/Layout';
 import './App.css'
 
@@ -15,7 +16,8 @@ function App() {
       <Route element={<Layout />}> 
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
-        <Route path="/topup" element={<Topup />} />
+  <Route path="/topup" element={<Topup />} />
+  <Route path="/payments" element={<Payments />} />
         <Route path="/send" element={<Send />} />
       </Route>
     </Routes>
