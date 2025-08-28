@@ -1,0 +1,98 @@
+.dashboard {
+  padding: 2rem;
+}
+
+.overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.overview-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid;
+}
+
+.balance-card {
+  border-left-color: var(--primary);
+}
+
+.inflow-card {
+  border-left-color: var(--gray-700);
+}
+
+.outflow-card {
+  border-left-color: var(--primary-dark);
+}
+
+.card-label {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.payments-section {
+  margin-top: 2rem;
+}
+
+.payments-header {
+  margin-bottom: 1rem;
+}
+
+.payments-table-container {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.payments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payments-table th {
+  background: #f8f9fa;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.payments-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.empty-state {
+  text-align: center;
+  font-style: italic;
+  padding: 3rem !important;
+}
+.payments-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--gray-700);
+  font-style: italic;
+  padding: 3rem !important;
+}
