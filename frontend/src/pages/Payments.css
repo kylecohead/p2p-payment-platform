@@ -1,0 +1,25 @@
+/* Payments page specific*/
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+}
+
+.btn-outline:hover { 
+  background: var(--gray-200); 
+}
+
+/* Color overrides for payment cards - base style in global.css */
+.payment-card.credit {
+  border-left-color: var(--success);
+}
+
+.payment-card.debit {
+  border-left-color: var(--error);
+}
+
+/* Table placeholder spacing */
+.payments-table-container { 
+  margin-top: 1rem; 
+}

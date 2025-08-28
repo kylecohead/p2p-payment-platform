@@ -63,29 +63,29 @@ export default function Home() {
 
     return (
         <div className="dashboard">
-            <div className="page-header">
+            <div className="page-header-with-actions">
                 <h1 className="page-title">Dashboard</h1>
+                <div className="page-actions">
+                    <button className="btn top-up-btn" onClick={() => navigate('/topup')}>
+                        + Top up
+                    </button>
+                </div>
             </div>
 
-            <div className="overview-header">
-                <h2>Todays Overview</h2>
-                <button className="btn top-up-btn" onClick={() => navigate('/topup')}>
-                    + Top up
-                </button>
-            </div>
+            <h2 style={{textAlign: 'center', marginBottom: '1.5rem'}}>Today's Overview</h2>
 
-            <div className="overview-cards">
-                <div className="overview-card balance-card">
+            <div className="overview-cards card-grid">
+                <div className="overview-card stat-card balance-card">
                     <div className="card-label">Balance</div>
                     <div className="card-value">R{Number(balance).toFixed(2)}</div>
                 </div>
 
-                <div className="overview-card inflow-card">
+                <div className="overview-card stat-card inflow-card">
                     <div className="card-label">Cash Inflows</div>
                     <div className="card-value positive">temp</div>
                 </div>
 
-                <div className="overview-card outflow-card">
+                <div className="overview-card stat-card outflow-card">
                     <div className="card-label">Cash Outflows</div>
                     <div className="card-value negative">temp</div>
                 </div>
