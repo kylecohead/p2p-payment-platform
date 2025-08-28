@@ -1,6 +1,8 @@
+// this is dashboard
+
 import React, { useState, useEffect } from "react";
-import "./Home.css";
 import { useNavigate } from "react-router-dom";
+import "./Dashboard.css";
 import ApiService from "../services/api";
 
 export default function Home() {
@@ -59,33 +61,65 @@ export default function Home() {
         };
     }, [navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem("currentUser");
-        navigate("/login");
-    };
-    const handleSend = () => navigate("/Send");
-    const handleTopup = () => navigate("/Topup");
-
     return (
-        <div className="home">
-            <h2>Home</h2>
-            <div className="account">
-        <span className="account-info">
-          Logged in as: {user?.name || "Loading..."}
-        </span>
+        <div className="dashboard">
+            <div className="dashboard-header">
+                <h1>Dashboard</h1>
             </div>
 
-            <div className="balance-section">
-                <span>Your Balance: ${Number(balance).toFixed(2)}</span>
+            <div className="dashboard-overview">
+                <div className="overview-header">
+                    <h2>Today Overview</h2>
+                    <button className="btn top-up-btn" onClick={() => navigate('/topup')}>
+                        + Top up
+                    </button>
+                </div>
+
+                <div className="overview-cards">
+                    <div className="overview-card balance-card">
+                        <div className="card-label">Balance</div>
+                        <div className="card-value">R{Number(balance).toFixed(2)}</div>
+                    </div>
+
+                    <div className="overview-card inflow-card">
+                        <div className="card-label">Cash Inflows</div>
+                        <div className="card-value positive">temp</div>
+                    </div>
+
+                    <div className="overview-card outflow-card">
+                        <div className="card-label">Cash Outflows</div>
+                        <div className="card-value negative">temp</div>
+                    </div>
+                </div>
             </div>
 
-            <div className="button-section">
-                <button onClick={handleSend}>Send</button>
-                <button onClick={handleTopup}>Topup</button>
-            </div>
+            <div className="payments-section">
+                <div className="payments-header">
+                    <h2>Payments</h2>
+                </div>
 
-            <div className="logout-button">
-                <button onClick={handleLogout}>Logout</button>
+                <div className="payments-table-container">
+                    <table className="payments-table">
+                        <thead>
+                            <tr>
+                                <th>PERSON</th>
+                                <th>ACCOUNT NUMBER</th>
+                                <th>EMAIL</th>
+                                <th>DATE</th>
+                                <th>TIME</th>
+                                <th>TOTAL</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colSpan="7" className="empty-state">
+                                    No payment history available
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
