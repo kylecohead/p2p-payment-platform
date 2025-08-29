@@ -41,7 +41,7 @@ h1, h2, h3 {
 /* Page heading layout */
 .page-header {
   text-align: left;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 /* When page has actions (buttons) - spread them apart */
@@ -161,31 +161,32 @@ input:focus, textarea:focus, select:focus {
 .text-center { text-align: center; }
 .font-bold { font-weight: 700; }
 
-/* Layout Shell */
-.app-shell { 
-  display: flex; 
-  min-height: 100vh; 
+/* Layout Shell - Grid Layout */
+.container { 
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 60px 1fr;
+  grid-template-areas:
+    "topBar topBar"
+    "sidePanel content";
+  min-height: 100vh;
+  min-width: 100vw;
   background: var(--white); 
 }
 
-.sidenav { 
-  width: 220px; 
+.sidePanel { 
+  grid-area: sidePanel;
   background: var(--white); 
   border-right: 1px solid var(--gray-200); 
-  padding: 1.5rem 1rem; 
-  position: fixed;
-  left: 0;
-  top: 56px;
-  bottom: 0;
-  overflow-y: auto;
+  padding: 1rem;
 }
 
-.sidenav ul { list-style: none; margin: 0; padding: 0; }
-.sidenav li + li { margin-top: 1rem; }
+.sidePanel ul { list-style: none; margin: 0; padding: 0; }
+.sidePanel li + li { margin-top: 1rem; }
 .nav-link { 
   display: flex; 
   align-items: center; 
-  padding: 1rem 1.5rem; 
+  padding: 1rem 1rem; 
   border-radius: 12px; 
   text-decoration: none; 
   color: var(--gray-700); 
@@ -205,23 +206,14 @@ input:focus, textarea:focus, select:focus {
   font-weight: 600;
 }
 
-.main-column { 
-  flex: 1;
-}
-
-.topbar {
-  height: 56px; 
+.topBar {
+  grid-area: topBar;
   display: flex; 
   align-items: center; 
   justify-content: space-between; 
-  padding: 0 1rem; 
   border-bottom: 1px solid var(--gray-200); 
   background: var(--white);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  padding: 1rem;
 }
 
 .logo {
@@ -234,10 +226,7 @@ input:focus, textarea:focus, select:focus {
 .user-name { font-weight: 500; }
 
 .content { 
-  flex: 1; 
-  padding: 0.75rem; 
-  overflow: auto; 
+  grid-area: content; 
   background: var(--white);
-  margin-top: 56px;
-  width: 150vh;
+  padding: 1rem;
 }

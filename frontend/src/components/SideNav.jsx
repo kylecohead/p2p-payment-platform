@@ -8,7 +8,7 @@ const navItems = [
 
 export default function SideNav() {
   return (
-    <nav className="sidenav">
+    <nav className="sidePanel">
       <ul>
         {navItems.map(i => (
           <li key={i.to}>

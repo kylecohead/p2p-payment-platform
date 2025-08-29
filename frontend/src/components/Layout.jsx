@@ -14,14 +14,12 @@ export default function Layout() {
   }, [navigate]);
 
   return (
-    <div className="app-shell">
+    <div className="container">
       <SideNav />
-      <div className="main-column">
-        <TopBar user={user} />
-        <main className="content">
-          <Outlet />
-        </main>
-      </div>
+      <TopBar user={user} />
+      <main className="content">
+        <Outlet />
+      </main>
     </div>
   );
 }

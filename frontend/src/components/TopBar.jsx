@@ -8,7 +8,7 @@ export default function TopBar({ user }) {
     navigate('/login');
   };
   return (
-    <header className="topbar">
+    <header className="topBar">
       <div className="logo" onClick={() => navigate('/home')} style={{fontWeight:600}}>SafePay+</div>
       <div className="topbar-right">
         {user && <span className="user-name">{user.name}</span>}
