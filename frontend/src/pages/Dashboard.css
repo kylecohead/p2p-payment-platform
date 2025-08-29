@@ -1,12 +1,3 @@
-
-/* Use shared card-grid and stat-card from global.css, only color overrides here */
-.overview-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-}
-
 /* Color overrides for dashboard cards - base style in global.css */
 .balance-card {
   border-left-color: var(--primary);
@@ -18,40 +9,6 @@
 
 .outflow-card {
   border-left-color: var(--primary-dark);
-}
-
-.payments-section {
-  margin-top: 2rem;
-}
-
-.payments-header {
-  margin-bottom: 1rem;
-}
-
-.payments-table-container {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.payments-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.payments-table th {
-  background: #f8f9fa;
-  padding: 1rem;
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.8rem;
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.payments-table td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--gray-200);
 }
 
 .empty-state {

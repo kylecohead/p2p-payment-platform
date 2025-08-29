@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Dashboard.css'; // reuse existing table styles
 import './Payments.css';
 
 export default function Payments() {

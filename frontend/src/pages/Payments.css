@@ -23,3 +23,33 @@
 .payments-table-container { 
   margin-top: 1rem; 
 }
+
+.payments-section {
+  margin-top: 2rem;
+}
+
+.payments-table-container {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.payments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payments-table th {
+  background: var(--gray-200);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.payments-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
