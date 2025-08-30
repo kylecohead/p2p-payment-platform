@@ -1,11 +1,11 @@
-// this is dashboard
+// Dashboard page
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import ApiService from "../services/api";
 
-export default function Home() {
+export default function Dashboard() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [balance, setBalance] = useState(0);
