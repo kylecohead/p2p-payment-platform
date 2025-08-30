@@ -1,15 +1,80 @@
-/* Color overrides for dashboard cards - base style in global.css */
-.balance-card {
-  border-left-color: var(--primary);
+/* Dashboard-specific card layout */
+.dashboard-cards {
+  max-width: 1200px;
+  margin: 0 auto 2rem auto;
 }
 
+/* Full-width balance card */
+.balance-card-full {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--primary);
+  text-align: center;
+}
+
+.balance-card-full .card-label {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.balance-card-full .card-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+/* Cash flow cards grid */
+.cash-flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.cash-flow-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid var(--success);
+}
+
+.cash-flow-card .card-label {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.cash-flow-card .card-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* Card color overrides */
 .inflow-card {
-  border-left-color: var(--gray-700);
+  border-left-color: var(--success);
 }
 
 .outflow-card {
-  border-left-color: var(--primary-dark);
+  border-left-color: var(--error);
 }
+
+/* Value color styles */
+.card-value.positive {
+  color: var(--success);
+}
+
+.card-value.negative {
+  color: var(--error);
+}
+
+/* Legacy styles for existing elements */
 
 .empty-state {
   text-align: center;

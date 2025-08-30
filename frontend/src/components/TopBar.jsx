@@ -9,7 +9,7 @@ export default function TopBar({ user }) {
   };
   return (
     <header className="topBar">
-      <div className="logo" onClick={() => navigate('/home')} style={{fontWeight:600}}>SafePay+</div>
+      <div className="logo" onClick={() => navigate('/dashboard')} style={{fontWeight:600}}>SafePay+</div>
       <div className="topbar-right">
         {user && <span className="user-name">{user.name}</span>}
         <button className="btn" onClick={handleLogout}>Logout</button>

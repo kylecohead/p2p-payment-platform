@@ -74,20 +74,24 @@ export default function Dashboard() {
 
             <h2 style={{textAlign: 'center', marginBottom: '1.5rem'}}>Today's Overview</h2>
 
-            <div className="overview-cards card-grid">
-                <div className="overview-card stat-card balance-card">
-                    <div className="card-label">Balance</div>
+            <div className="dashboard-cards">
+                {/* Balance card - full width */}
+                <div className="balance-card-full">
+                    <div className="card-label">Current Balance</div>
                     <div className="card-value">R{Number(balance).toFixed(2)}</div>
                 </div>
 
-                <div className="overview-card stat-card inflow-card">
-                    <div className="card-label">Cash Inflows</div>
-                    <div className="card-value positive">temp</div>
-                </div>
+                {/* Cash flow cards - side by side */}
+                <div className="cash-flow-grid">
+                    <div className="cash-flow-card inflow-card">
+                        <div className="card-label">Cash Inflows</div>
+                        <div className="card-value positive">temp</div>
+                    </div>
 
-                <div className="overview-card stat-card outflow-card">
-                    <div className="card-label">Cash Outflows</div>
-                    <div className="card-value negative">temp</div>
+                    <div className="cash-flow-card outflow-card">
+                        <div className="card-label">Cash Outflows</div>
+                        <div className="card-value negative">temp</div>
+                    </div>
                 </div>
             </div>
 

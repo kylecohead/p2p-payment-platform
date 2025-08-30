@@ -5,6 +5,7 @@ import Topup from "./pages/Topup";
 import Send from "./pages/Send";
 import Payments from './pages/Payments';
 import Layout from './components/Layout';
+import Admin from './pages/Admin';
 import './App.css'
 
 function App() {
@@ -13,12 +14,13 @@ function App() {
       {/* Public */}
       <Route path="/login" element={<Login />} />
       {/* Authenticated shell */}
-      <Route element={<Layout />}> 
+      <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/home" element={<Dashboard />} />
-  <Route path="/topup" element={<Topup />} />
-  <Route path="/payments" element={<Payments />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/topup" element={<Topup />} />
+        <Route path="/payments" element={<Payments />} />
         <Route path="/send" element={<Send />} />
+        <Route path="/admin" element={<Admin />} />
       </Route>
     </Routes>
   )
