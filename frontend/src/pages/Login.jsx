@@ -21,6 +21,7 @@ export default function Login() {
     }
   };
 
+  // Validate and handle signup requests
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
@@ -142,6 +143,8 @@ export default function Login() {
 
 }
 // ----- HELPER FUNCTIONS -----
+
+// Password: min 8 chars, must include upper, lower, number
 function validatePassword(password) {
   const hasMinLength = password.length >= 8;
   const hasUpper = /[A-Z]/.test(password);
