@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 from ..config.database import SPBase
-from passlib.context import CryptContext
+from ..services.auth import AuthService
 
 class User(SPBase):
     __tablename__ = "users"
@@ -19,7 +19,14 @@ class User(SPBase):
     accounts = relationship("Account", back_populates="user")
 
     def set_password(self, password: str) -> None:
-        self.password_hash = "12345"
+        """Hash the password and set it for the user."""
+        self.password_hash = AuthService.hash_password(password)
+    
+    def check_password(self, password: str) -> bool:
+        """Verify a password."""
+        if self.password_hash is None:
+            return False
+        return AuthService.verify_password(password, str(self.password_hash))
 
     def __repr__(self):
         return f"<User(id={self.id}, name='{self.name}', email='{self.email}')>"
