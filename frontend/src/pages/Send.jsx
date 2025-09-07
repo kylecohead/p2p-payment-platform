@@ -34,11 +34,11 @@ export default function Send() {
   const handleCancel = () => {
     setRecipientEmail("");
     setAmount("");
-    navigate("/home");
+    navigate("/");
   };
 
   const handleReturnHome = () => {
-    navigate("/home");
+    navigate("/");
   };
 
   return (

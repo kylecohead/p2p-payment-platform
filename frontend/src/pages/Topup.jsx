@@ -32,11 +32,11 @@ export default function Topup() {
 
   const handleCancel = () => {
     setAmount("");
-    navigate("/home");
+    navigate("/");
   };
 
   const handleReturnHome = () => {
-    navigate("/home");
+    navigate("/");
   };
 
   return (
