@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from pydantic import PositiveFloat
 from typing import Optional
 from decimal import Decimal
+from datetime import datetime
 
 app = FastAPI()
 
@@ -40,6 +41,58 @@ class ClientResponse(BaseModel):
 class TransactionRequest(BaseModel):
     amount: PositiveFloat
     recipient_email: Optional[str] = None
+
+class TransactionBase(BaseModel):
+    amount: PositiveFloat
+    currency: Optional[str] = "ZAR"
+    status: Optional[str] = "pending"
+    kind: Optional[str] = "transfer"
+    method: Optional[str] = None
+    reference: Optional[str] = None
+
+
+class TransactionCreate(TransactionBase):
+    recipient_email: Optional[str] = None
+
+
+class TransactionResponse(TransactionBase):
+    id: int
+    sender_id: int
+    recipient_id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
+class UserBase(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserResponse(UserBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class AccountBase(BaseModel):
+    account_number: str
+    balance: float = 0.0
+
+
+class AccountResponse(AccountBase):
+    id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
 
 @app.get("/")
 def read_root():

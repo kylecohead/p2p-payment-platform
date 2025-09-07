@@ -6,7 +6,6 @@ from sqlalchemy import (
     Numeric,
     DateTime,
     String,
-    JSON,
     Index,
     text,
     func,
@@ -18,8 +17,8 @@ class Transaction(SPBase):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True)
-    sender_id = Column(Integer, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False, index=True)
-    recipient_id = Column(Integer, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    recipient_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
 
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(3), nullable=False, server_default="ZAR")
@@ -37,8 +36,8 @@ class Transaction(SPBase):
     )
 
     # relationships 
-    sender = relationship("Client", foreign_keys=[sender_id], backref="outgoing_transactions")
-    recipient = relationship("Client", foreign_keys=[recipient_id], backref="incoming_transactions")
+    sender = relationship("Account", foreign_keys=[sender_id], backref="outgoing_transactions")
+    recipient = relationship("Account", foreign_keys=[recipient_id], backref="incoming_transactions")
 
 Index("ix_transactions_sender_created", Transaction.sender_id, Transaction.created_at)
 Index("ix_transactions_recipient_created", Transaction.recipient_id, Transaction.created_at)
