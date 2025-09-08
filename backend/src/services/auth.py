@@ -22,13 +22,25 @@ class AuthService:
         return pwd_context.verify(plain_password, hashed_password)
     
     @staticmethod
+    def set_user_password(user: User, password: str) -> None:
+        """Hash the password and set it for the user."""
+        user.password_hash = AuthService.hash_password(password)  # type: ignore
+    
+    @staticmethod
+    def check_user_password(user: User, password: str) -> bool:
+        """Verify a password for a user."""
+        if user.password_hash is None:
+            return False
+        return AuthService.verify_password(password, str(user.password_hash))
+    
+    @staticmethod
     def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         """Authenticate a user by email and password."""
         user = db.query(User).filter(User.email == email).first()
         if not user:
             return None
         
-        if not user.check_password(password):
+        if not AuthService.check_user_password(user, password):
             return None
             
         return user
@@ -41,7 +53,7 @@ class AuthService:
             email=email,
             phone=phone
         )
-        user.set_password(password)
+        AuthService.set_user_password(user, password)
         db.add(user)
         db.commit()
         db.refresh(user)
