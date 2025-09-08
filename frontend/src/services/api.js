@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://100.102.145.100:8000';
+const API_BASE_URL = 'http://100.102.145.100:8000'; /*change to your own one for frontend*/
 
 class ApiService {
   // Login method
@@ -13,7 +13,15 @@ class ApiService {
       const error = await response.json();
       throw new Error(error.detail || 'Login failed');
     }
-    return response.json();
+    const data = await response.json();
+    // persist account info if present
+    try {
+      const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      localStorage.setItem('currentUser', JSON.stringify({ ...stored, ...data }));
+    } catch (e) {
+      // ignore storage errors
+    }
+    return data;
   }
 
   // Get Client data
@@ -23,7 +31,12 @@ class ApiService {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to fetch client data');
     }
-    return response.json();
+    const data = await response.json();
+    try {
+      const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      localStorage.setItem('currentUser', JSON.stringify({ ...stored, ...data }));
+    } catch (e) {}
+    return data;
   }
 
   // Signup method
@@ -38,7 +51,11 @@ class ApiService {
       const error = await response.json();
       throw new Error(error.detail || 'Signup failed');
     }
-    return response.json();
+    const data = await response.json();
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(data));
+    } catch (e) {}
+    return data;
   }
 
   // Top-up balance method

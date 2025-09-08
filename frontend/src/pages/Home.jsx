@@ -75,6 +75,12 @@ export default function Home() {
         </span>
             </div>
 
+            {user?.account_number && (
+                <div style={{ marginTop: 8 }}>
+                    Account: ****{user.account_number.slice(-4)}
+                </div>
+            )}
+
             <div className="balance-section">
                 <span>Your Balance: ${Number(balance).toFixed(2)}</span>
             </div>
