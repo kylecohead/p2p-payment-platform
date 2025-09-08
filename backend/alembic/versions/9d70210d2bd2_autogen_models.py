@@ -1,7 +1,7 @@
 """autogen models
 
 Revision ID: 9d70210d2bd2
-Revises: 59ba1d5fcdfe
+Revises: 2d0db0b9ee9d
 Create Date: 2025-09-07 12:16:08.109217
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '9d70210d2bd2'
-down_revision: Union[str, Sequence[str], None] = '59ba1d5fcdfe'
+down_revision: Union[str, Sequence[str], None] = '2d0db0b9ee9d'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

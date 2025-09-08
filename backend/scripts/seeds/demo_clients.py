@@ -2,6 +2,7 @@ from decimal import Decimal
 from src.config.database import LocalSession
 from src.models.user import User
 from src.models.account import Account
+from src.services.auth import AuthService
 
 SEED_USERS = [
     {"name": "Alice ", "email": "alice@gmail.com", "phone": "111111", "balance": Decimal("0")},
@@ -25,7 +26,7 @@ def run():
             db.commit()
             db.refresh(user)
             # set a default password for seeded users (for dev only)
-            user.set_password("password123")
+            AuthService.set_user_password(user, "password123")
             db.add(user)
             db.commit()
             db.refresh(user)

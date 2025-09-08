@@ -25,8 +25,9 @@ def upgrade() -> None:
                existing_type=sa.NUMERIC(precision=12, scale=2),
                server_default=sa.text('0'),
                nullable=False)
-    op.drop_constraint(op.f('clients_email_key'), 'clients', type_='unique')
-    op.drop_constraint(op.f('clients_phone_key'), 'clients', type_='unique')
+    # Use IF EXISTS to avoid failing when constraint names differ or are absent
+    op.execute("ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_email_key;")
+    op.execute("ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_phone_key;")
     # ### end Alembic commands ###
 
 
