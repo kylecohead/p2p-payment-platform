@@ -1,19 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Payments.css';
+import { examplePayments } from './examplePayments';
 
 export default function Payments() {
   const navigate = useNavigate();
 
-  // Backend please replace these temp values with live API data
-  const paymentSummary = {
-    allPayments: 'temp',
-    allPaymentsRecords: 'temp records',
-    credits: 'temp', 
-    creditsRecords: 'temp records',
-    debits: 'temp',
-    debitsRecords: 'temp records'
-  };
+  // Replace with real data
+  const payments = examplePayments;
 
   const handleNewPayment = () => {
     navigate('/send'); // Navigate to existing Send page
@@ -23,6 +17,13 @@ export default function Payments() {
     // TODO: Backend export functionality 
     alert('Export functionality coming soon');
   };
+
+  // Calculate totals
+  const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+  const credits = payments.filter(p => p.type === 'Credit');
+  const debits = payments.filter(p => p.type === 'Debit');
+  const totalCredits = credits.reduce((sum, p) => sum + p.amount, 0);
+  const totalDebits = debits.reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <div className="payments-page">
@@ -41,20 +42,18 @@ export default function Payments() {
       <div className="payments-cards card-grid">
         <div className="payment-card stat-card">
           <div className="card-header">All payments</div>
-          <div className="card-value">{paymentSummary.allPayments}</div>
-          <div className="card-subtitle">{paymentSummary.allPaymentsRecords}</div>
+          <div className="card-value">R{totalAmount.toFixed(2)}</div>
+          <div className="card-subtitle">{payments.length} records</div>
         </div>
-        
         <div className="payment-card stat-card credit">
           <div className="card-header">Credits</div>
-          <div className="card-value">{paymentSummary.credits}</div>
-          <div className="card-subtitle">{paymentSummary.creditsRecords}</div>
+          <div className="card-value">R{totalCredits.toFixed(2)}</div>
+          <div className="card-subtitle">{credits.length} records</div>
         </div>
-        
         <div className="payment-card stat-card debit">
           <div className="card-header">Debits</div>
-          <div className="card-value">{paymentSummary.debits}</div>
-          <div className="card-subtitle">{paymentSummary.debitsRecords}</div>
+          <div className="card-value">R{Math.abs(totalDebits).toFixed(2)}</div>
+          <div className="card-subtitle">{debits.length} records</div>
         </div>
       </div>
 
@@ -72,12 +71,17 @@ export default function Payments() {
             </tr>
           </thead>
           <tbody>
-            {/* Backend please populate this table with live payment data */}
-            <tr>
-              <td colSpan="7" className="empty-state">
-                No payment history available
-              </td>
-            </tr>
+            {payments.map((p, idx) => (
+              <tr key={p.code}>
+                <td>{p.code}</td>
+                <td>{p.type}</td>
+                <td>{p.description}</td>
+                <td>{p.time}</td>
+                <td>{p.date}</td>
+                <td>{p.name}</td>
+                <td style={{color: p.amount < 0 ? 'red' : 'green', fontWeight: 'bold'}}>{p.amount < 0 ? '-' : ''}R{Math.abs(p.amount).toFixed(2)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://100.102.145.100:8000';
+const API_BASE_URL = 'http://localhost:8000';
 
 class ApiService {
   // Login method

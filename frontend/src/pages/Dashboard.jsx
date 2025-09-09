@@ -1,14 +1,26 @@
 // Dashboard page
 
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import ApiService from "../services/api";
+import { examplePayments } from "./examplePayments";
+
+
+
+// using hard coded paymentss, filter for today
+const today = new Date().toISOString().slice(0, 10);
+const paymentsToday = examplePayments.filter((p) => p.date === today);
+const creditsToday = paymentsToday.filter((p) => p.type === "Credit");
+const debitsToday = paymentsToday.filter((p) => p.type === "Debit");
+const totalCreditsToday = creditsToday.reduce((sum, p) => sum + p.amount, 0);
+const totalDebitsToday = debitsToday.reduce((sum, p) => sum + p.amount, 0);
 
 export default function Dashboard() {
-    const navigate = useNavigate();
-    const [user, setUser] = useState(null);
-    const [balance, setBalance] = useState(0);
+        const navigate = useNavigate();
+        const [user, setUser] = useState(null);
+        const [balance, setBalance] = useState(0);
 
     useEffect(() => {
         const userData = localStorage.getItem("currentUser");
@@ -81,18 +93,19 @@ export default function Dashboard() {
                     <div className="card-value">R{Number(balance).toFixed(2)}</div>
                 </div>
 
-                {/* Cash flow cards - side by side */}
-                <div className="cash-flow-grid">
-                    <div className="cash-flow-card inflow-card">
-                        <div className="card-label">Cash Inflows</div>
-                        <div className="card-value positive">temp</div>
-                    </div>
-
-                    <div className="cash-flow-card outflow-card">
-                        <div className="card-label">Cash Outflows</div>
-                        <div className="card-value negative">temp</div>
-                    </div>
-                </div>
+                                {/* Credits and Debits today cards - side by side */}
+                                <div className="cash-flow-grid">
+                                    <div className="cash-flow-card credit-card">
+                                        <div className="card-label">Credits today</div>
+                                        <div className="card-value positive">R{totalCreditsToday.toFixed(2)}</div>
+                                        <div className="card-subtitle">{creditsToday.length} credits</div>
+                                    </div>
+                                    <div className="cash-flow-card debit-card">
+                                        <div className="card-label">Debits today</div>
+                                        <div className="card-value negative">R{Math.abs(totalDebitsToday).toFixed(2)}</div>
+                                        <div className="card-subtitle">{debitsToday.length} debits</div>
+                                    </div>
+                                </div>
             </div>
 
             {/* Payments table moved to /payments page */}
