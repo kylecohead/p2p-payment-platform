@@ -8,7 +8,7 @@ export const examplePayments = [
     date: '2025-09-01',
     name: 'Lisa',
     amount: 5000.00,
-    status: 'succeeded'
+    status: 'Succeeded'
   },
   {
     code: 'TXN002',
@@ -18,7 +18,7 @@ export const examplePayments = [
     date: '2025-09-02',
     name: 'Dan',
     amount: -120.50,
-    status: 'flagged'
+    status: 'Flagged'
   },
   {
     code: 'TXN003',
@@ -28,7 +28,7 @@ export const examplePayments = [
     date: '2025-09-03',
     name: 'Jenna',
     amount: 75.00,
-    status: 'succeeded'
+    status: 'Succeeded'
   },
   {
     code: 'TXN004',
@@ -38,7 +38,7 @@ export const examplePayments = [
     date: '2025-09-04',
     name: 'Utility Co',
     amount: -300.00,
-    status: 'blocked'
+    status: 'Blocked'
   },
   {
     code: 'TXN010',
@@ -48,7 +48,7 @@ export const examplePayments = [
     date: '2025-09-09',
     name: 'Mario',
     amount: 200.0,
-    status: 'flagged'
+    status: 'Flagged'
   },
   {
     code: 'TXN011',
@@ -58,7 +58,7 @@ export const examplePayments = [
     date: '2025-09-09',
     name: 'Hannah',
     amount: -45.0,
-    status: 'succeeded'
+    status: 'Succeeded'
   },
   {
     code: 'TXN012',
@@ -68,7 +68,7 @@ export const examplePayments = [
     date: '2025-09-09',
     name: 'John',
     amount: 150.0,
-    status: 'flagged'
+    status: 'Flagged'
   },
   {
     code: 'TXN013',
@@ -78,6 +78,6 @@ export const examplePayments = [
     date: '2025-09-09',
     name: 'Mark',
     amount: -80.0,
-    status: 'succeeded'
+    status: 'Succeeded'
   }
 ];
