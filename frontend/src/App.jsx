@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Topup from "./pages/Topup";
@@ -13,9 +14,9 @@ function App() {
     <Routes>
       {/* Public */}
       <Route path="/login" element={<Login />} />
+      <Route path="/" element={<LandingPage />} />
       {/* Authenticated shell */}
       <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/topup" element={<Topup />} />
         <Route path="/payments" element={<Payments />} />
