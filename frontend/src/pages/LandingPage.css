@@ -43,7 +43,7 @@
 }
 
 .text-section h1 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .text-section p {
@@ -63,14 +63,14 @@
     position: absolute;
     bottom: 60px;
     left: 0px;
-    height: 80px;
-    width: 150px;
+    height: 100px;
+    width: 190px;
 }
 
 .shadow-shape-right {
     position: absolute;
     top: 60px;
     right: 0px;
-    height: 80px;
-    width: 150px;
+    height: 100px;
+    width: 190px;
 }
