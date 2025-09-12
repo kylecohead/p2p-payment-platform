@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from src.config.database import get_db
 from src.models.user import User
 from src.models.account import Account
@@ -218,60 +219,79 @@ def send_money(client_id: int, transaction: TransactionCreate, db: Session = Dep
 
 @app.post("/api/transfers")
 def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
-    sender: Account = db.query(Account).get(payload.sender_account_id)
-    recipient: Account = db.query(Account).get(payload.recipient_account_id)
-    if not sender or not recipient:
-        raise HTTPException(status_code=404, detail="Sender or recipient account not found")
-
     amount = Decimal(str(payload.amount))
 
-    # 1) Evaluate rules
-    allowed, alerts, violations = RuleEngine.evaluate(
-        db, sender=sender, recipient=recipient, amount=amount
-    )
+    # Lock both accounts in a deterministic order to avoid deadlocks
+    try:
+        # Lock by sorted ids so every concurrent request locks in the same order
+        acct_ids = sorted([payload.sender_account_id, payload.recipient_account_id])
 
-    # 2) If hard-stop, persist alerts and return 409 without moving funds
-    if not allowed:
+        locked_accounts = (db.query(Account)
+            .filter(Account.id.in_(acct_ids))
+            .with_for_update()
+            .all())
+
+        # Map back to sender/recipient after the lock
+        locked_map = {a.id: a for a in locked_accounts}
+        sender = locked_map.get(payload.sender_account_id)
+        recipient = locked_map.get(payload.recipient_account_id)
+
+        if not sender or not recipient:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="Sender or recipient account not found")
+
+        # Evaluate rules against the locked snapshot
+        allowed, alerts, violations = RuleEngine.evaluate(
+            db, sender=sender, recipient=recipient, amount=amount
+        )
+
+        # Not allowed: rollback to drop locks, then persist alerts separately and return 409
+        if not allowed:
+            db.rollback()                       # release row locks
+            for a in alerts:
+                db.add(a)
+            db.commit()                         # persist alerts even for blocked attempts
+            raise HTTPException(status_code=409, detail={"message": "Transfer blocked", "violations": violations})
+
+        # Allowed: move funds + create transaction atomically under the same lock
+        tx = Transaction(
+            sender_id=sender.id,
+            recipient_id=recipient.id,
+            amount=amount,
+            currency="ZAR",
+            status="completed",
+            kind="transfer",
+            method=payload.method,
+            reference=payload.reference,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+
+        sender.balance = (sender.balance or Decimal("0")) - amount
+        recipient.balance = (recipient.balance or Decimal("0")) + amount
+
+        db.add(tx)
+        db.flush() # assign ID to tx
+
         for a in alerts:
+            a.transaction_id = tx.id
             db.add(a)
-        db.commit()
-        raise HTTPException(status_code=409, detail={"message": "Transfer blocked", "violations": violations})
 
-    # 3) Allowed: create transaction and move funds atomically
-    # (For production: wrap in SERIALIZABLE tx or SELECT ... FOR UPDATE)
-    tx = Transaction(
-        sender_id=sender.id,
-        recipient_id=recipient.id,
-        amount=amount,
-        currency="ZAR",
-        status="completed",
-        kind="transfer",
-        method=payload.method,
-        reference=payload.reference,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    )
-    sender.balance = (sender.balance or Decimal("0")) - amount
-    recipient.balance = (recipient.balance or Decimal("0")) + amount
+        db.commit()  # commits both balance changes + transaction + alerts
 
-    db.add(tx)
-    db.flush()  # get tx.id
+        db.refresh(tx)
+        db.refresh(sender)
 
-    # attach alerts to this transaction, if any
-    for a in alerts:
-        a.transaction_id = tx.id
-        db.add(a)
+        return {
+            "transaction_id": tx.id,
+            "status": tx.status,
+            "alerts": [{"code": a.code, "message": a.message} for a in alerts],
+            "new_balance": float(sender.balance or Decimal("0")),
+        }
 
-    db.commit()
-    db.refresh(tx)
-    db.refresh(sender)
-
-    return {
-        "transaction_id": tx.id,
-        "status": tx.status,
-        "alerts": [{"code": a.code, "message": a.message} for a in alerts],
-        "new_balance": float(sender.balance or Decimal("0")),
-    }
+    except SQLAlchemyError:
+        db.rollback()
+        raise
 
 # Admin: alerts & blocks
 @app.get("/api/admin/alerts")
