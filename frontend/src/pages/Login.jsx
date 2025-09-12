@@ -21,6 +21,7 @@ export default function Login() {
     }
   };
 
+  // Validate and handle signup requests
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
@@ -36,11 +37,20 @@ export default function Login() {
     if (!name || !rawEmail || !phone || !pwd || !confirm) {
       return setError("Please fill in all fields.");
     }
-    if (pwd !== confirm) {
-      return setError("Passwords do not match.");
+    if (!validateName(name)) {
+      return setError("Name must be at least 2 characters.");
     }
-    if (pwd.length < 8) {
-      return setError("Password must be at least 8 characters.");
+    if (!validateEmail(rawEmail)) {
+      return setError("Please enter a valid email address.");
+    }
+    if (!validatePhone(phone)) {
+      return setError("Please enter a valid phone number.");
+    }
+    if (!validatePassword(pwd)) {
+      return setError("Password must be at least 8 characters and include uppercase, lowercase, and a number.");
+    }
+    if (!validateConfirmPassword(pwd, confirm)) {
+      return setError("Passwords do not match.");
     }
 
     try {
@@ -131,4 +141,37 @@ export default function Login() {
       </div>
   );
 
+}
+// ----- HELPER FUNCTIONS -----
+
+// Password: min 8 chars, must include upper, lower, number
+function validatePassword(password) {
+  const hasMinLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+
+  return hasMinLength && hasUpper && hasLower && hasNumber;
+}
+
+// Name: must be at least 2 characters
+function validateName(name) {
+  return typeof name === "string" && name.trim().length >= 2;
+}
+
+// Email: simple regex check
+function validateEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+// Phone: digits only, length 10–15 (adjust as needed)
+function validatePhone(phone) {
+  const re = /^\+?\d{10,15}$/;
+  return re.test(phone);
+}
+
+// Confirm password: match check
+function validateConfirmPassword(password, confirm) {
+  return password === confirm;
 }
