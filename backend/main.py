@@ -5,11 +5,15 @@ from src.config.database import get_db
 from src.models.user import User
 from src.models.account import Account
 from src.services.auth import AuthService
+from src.models.transaction import Transaction
+from src.models.alert import Alert
+from src.models.block import Block, BlockType
+from src.services.rules import RuleEngine
 from pydantic import BaseModel
 from pydantic import PositiveFloat
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 import secrets
 
 app = FastAPI()
@@ -17,7 +21,7 @@ app = FastAPI()
 # Allow CORS for frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://100.102.145.100:*", "http://localhost:*", "*", ""],  # Allow Tailscale IP and localhost
+    allow_origins=["http://100.86.73.45:*", "http://localhost:*", "*", ""],  # Allow Tailscale IP and localhost
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +91,13 @@ class AccountResponse(AccountBase):
 
     class Config:
         orm_mode = True
+
+class TransferIn(BaseModel):
+    sender_account_id: int
+    recipient_account_id: int
+    amount: PositiveFloat
+    reference: Optional[str] = None
+    method: Optional[str] = "p2p"
 
 @app.get("/")
 def read_root():
@@ -187,52 +198,115 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
         "new_balance": float(balance_value) if balance_value is not None else 0.0
     }
 
+# Delegate requests to /api/transfers
 @app.post("/api/send/{client_id}")
 def send_money(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
     if not transaction.recipient_email:
         raise HTTPException(status_code=400, detail="Recipient email required")
-
-    # Get sender's account
     sender_account = db.query(Account).filter(Account.user_id == client_id).first()
-    if not sender_account:
-        raise HTTPException(status_code=404, detail="Sender account not found")
-
-    # Get recipient (user) and their account
+    if not sender_account: raise HTTPException(status_code=404, detail="Sender account not found")
     recipient_user = db.query(User).filter(User.email == transaction.recipient_email).first()
-    if not recipient_user:
-        raise HTTPException(status_code=404, detail="Recipient not found")
-
+    if not recipient_user: raise HTTPException(status_code=404, detail="Recipient not found")
     recipient_account = db.query(Account).filter(Account.user_id == recipient_user.id).first()
     if not recipient_account:
-        # create default recipient account if missing
-        import secrets
         account_number = f"ACC{secrets.token_hex(6)}"
         recipient_account = Account(user_id=recipient_user.id, account_number=account_number, balance=0)
-        db.add(recipient_account)
+        db.add(recipient_account); db.commit(); db.refresh(recipient_account)
+    payload = TransferIn(sender_account_id=sender_account.id, recipient_account_id=recipient_account.id,
+                         amount=transaction.amount, reference=transaction.reference, method="p2p")
+    return create_transfer(payload, db)
+
+@app.post("/api/transfers")
+def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
+    sender: Account = db.query(Account).get(payload.sender_account_id)
+    recipient: Account = db.query(Account).get(payload.recipient_account_id)
+    if not sender or not recipient:
+        raise HTTPException(status_code=404, detail="Sender or recipient account not found")
+
+    amount = Decimal(str(payload.amount))
+
+    # 1) Evaluate rules
+    allowed, alerts, violations = RuleEngine.evaluate(
+        db, sender=sender, recipient=recipient, amount=amount
+    )
+
+    # 2) If hard-stop, persist alerts and return 409 without moving funds
+    if not allowed:
+        for a in alerts:
+            db.add(a)
         db.commit()
-        db.refresh(recipient_account)
+        raise HTTPException(status_code=409, detail={"message": "Transfer blocked", "violations": violations})
 
-    # Check balance
-    sender_balance = getattr(sender_account, 'balance', Decimal('0')) or Decimal('0')
-    transaction_amount = Decimal(str(transaction.amount))
+    # 3) Allowed: create transaction and move funds atomically
+    # (For production: wrap in SERIALIZABLE tx or SELECT ... FOR UPDATE)
+    tx = Transaction(
+        sender_id=sender.id,
+        recipient_id=recipient.id,
+        amount=amount,
+        currency="ZAR",
+        status="completed",
+        kind="transfer",
+        method=payload.method,
+        reference=payload.reference,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    sender.balance = (sender.balance or Decimal("0")) - amount
+    recipient.balance = (recipient.balance or Decimal("0")) + amount
 
-    if sender_balance < transaction_amount:
-        raise HTTPException(status_code=400, detail="Insufficient balance")
+    db.add(tx)
+    db.flush()  # get tx.id
 
-    # Transfer money
-    sender_account.balance = sender_balance - transaction_amount
-    recipient_balance = getattr(recipient_account, 'balance', Decimal('0')) or Decimal('0')
-    recipient_account.balance = recipient_balance + transaction_amount
+    # attach alerts to this transaction, if any
+    for a in alerts:
+        a.transaction_id = tx.id
+        db.add(a)
 
     db.commit()
-    db.refresh(sender_account)
-    db.refresh(recipient_account)
+    db.refresh(tx)
+    db.refresh(sender)
 
-    sender_balance_value = getattr(sender_account, 'balance', 0)
     return {
-        "message": f"Successfully sent {transaction.amount} to {recipient_user.name}",
-        "new_balance": float(sender_balance_value) if sender_balance_value is not None else 0.0
+        "transaction_id": tx.id,
+        "status": tx.status,
+        "alerts": [{"code": a.code, "message": a.message} for a in alerts],
+        "new_balance": float(sender.balance or Decimal("0")),
     }
+
+# Admin: alerts & blocks
+@app.get("/api/admin/alerts")
+def list_alerts(cleared: Optional[bool] = None, db: Session = Depends(get_db)):
+    q = db.query(Alert); 
+    if cleared is not None: q = q.filter(Alert.cleared == cleared)
+    alerts = q.order_by(Alert.created_at.desc()).limit(200).all()
+    return [{"id": a.id, "code": a.code, "message": a.message, "cleared": a.cleared,
+             "transaction_id": a.transaction_id, "sender_account_id": a.sender_account_id,
+             "recipient_account_id": a.recipient_account_id, "created_at": a.created_at.isoformat()} for a in alerts]
+
+@app.post("/api/admin/alerts/{alert_id}/clear")
+def clear_alert(alert_id: int, db: Session = Depends(get_db)):
+    a = db.query(Alert).get(alert_id)
+    if not a: raise HTTPException(status_code=404, detail="Alert not found")
+    a.cleared = True; a.updated_at = datetime.now(timezone.utc); db.commit()
+    return {"ok": True}
+
+class BlockIn(BaseModel):
+    block_type: BlockType; subject_account_id: int; reason: Optional[str] = None
+
+@app.post("/api/admin/block")
+def create_block(payload: BlockIn, db: Session = Depends(get_db)):
+    b = Block(block_type=payload.block_type, subject_account_id=payload.subject_account_id,
+              reason=payload.reason, created_at=datetime.now(timezone.utc))
+    db.add(b); db.commit()
+    return {"ok": True, "id": b.id}
+
+@app.post("/api/admin/unblock/{block_id}")
+def remove_block(block_id: int, db: Session = Depends(get_db)):
+    b = db.query(Block).get(block_id)
+    if not b: raise HTTPException(status_code=404, detail="Block not found")
+    if b.removed_at is None: b.removed_at = datetime.now(timezone.utc); db.commit()
+    return {"ok": True}
+
 if __name__ == "__main__":
     import uvicorn
     import os
