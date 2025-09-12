@@ -12,6 +12,21 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+
+    const rawEmail = email?.trim();
+    const pwd = password ?? "";
+
+    // Client-side validation
+    if (!rawEmail || !pwd) {
+      return setError("Please fill in all fields.");
+    }
+    if (!validateEmail(rawEmail)) {
+      return setError("Please enter a valid email address.");
+    }
+    if (!validatePassword(pwd)) {
+      return setError("Password must be at least 8 characters and include uppercase, lowercase, and a number.");
+    }
     try {
       const userData = await ApiService.login(email, password);
       localStorage.setItem('currentUser', JSON.stringify(userData));
