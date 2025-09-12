@@ -1,0 +1,24 @@
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Index, Boolean
+from sqlalchemy.orm import relationship
+from ..config.database import SPBase
+
+class Alert(SPBase):
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id", ondelete="CASCADE"), nullable=True, index=True)
+    sender_account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    recipient_account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    code = Column(String(64), nullable=False)      # e.g., AMOUNT_LIMIT, BURSTING_60S, NEGATIVE_BAL, ZERO_BAL, DAILY_LIMIT
+    message = Column(Text, nullable=False)
+    cleared = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+    transaction = relationship("Transaction", backref="alerts")
+    sender = relationship("Account", foreign_keys=[sender_account_id])
+    recipient = relationship("Account", foreign_keys=[recipient_account_id])
+
+Index("ix_alerts_sender_created", Alert.sender_account_id, Alert.created_at)
+Index("ix_alerts_recipient_created", Alert.recipient_account_id, Alert.created_at)
