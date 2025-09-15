@@ -9,6 +9,9 @@ class BlockType(str, enum.Enum):
     RECIPIENT = "RECIPIENT"
 
 class Block(SPBase):
+    ''' Represents a block on an account, either preventing it from sending or receiving funds. 
+    Each block is unique by (block_type, subject_account_id).
+    '''
     __tablename__ = "blocks"
 
     id = Column(Integer, primary_key=True)

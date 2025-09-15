@@ -13,23 +13,21 @@ from ..models.block import Block, BlockType
 AMOUNT_LIMIT = Decimal("5000.00")
 DAILY_LIMIT  = Decimal("10000.00")
 BURST_WINDOW_SECONDS = 60
-BURST_MAX = 3  # "More than 3 transfers ... within 60 seconds" -> trigger when count > 3
+BURST_MAX = 3 # transaction limit within BURST_WINDOW_SECONDS
 
 class RuleEngineResult(Tuple[bool, List[Alert], List[str]]): ...
 # allowed, alerts, violation_codes
 
 class RuleEngine:
+    ''' Evaluates transfer rules and returns whether the transfer is allowed, any generated alerts, and violation codes.
+    '''
     @staticmethod
     def _now():
-        # Server assumed to run in UTC; if your DB is UTC too, keep it this way.
-        # If you prefer Africa/Johannesburg awareness, convert here before comparisons.
         return datetime.now(timezone.utc)
 
     @staticmethod
     def _start_of_local_day(now_utc: datetime) -> datetime:
-        # If you store tz-aware timestamps in DB (UTC), compute the boundary you want.
-        # For simplicity assume UTC day boundary. If you want Africa/Johannesburg,
-        # shift by +02:00 when computing the day's start.
+        # Assuming server in UTC, Africa/Johannesburg is UTC+2 (no DST)
         return now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
 
     @classmethod
@@ -94,7 +92,7 @@ class RuleEngine:
             Transaction.created_at >= window_start,
             Transaction.status.in_(["pending", "completed"])
         ).count()
-        # The spec: "More than 3 transfers ... within 60 seconds" — we add 1 for the current attempt.
+        # More than 3 transfers ... within 60 seconds
         if (recent_count + 1) > BURST_MAX:
             alerts.append(Alert(
                 sender_account_id=sender.id,
