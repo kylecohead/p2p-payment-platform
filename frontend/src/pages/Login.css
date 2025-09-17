@@ -1,52 +1,54 @@
-.login-page{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
 }
 
 .login-card {
-    min-width: 400px;
-    min-height: 300px;
-    background-color: rgb(231, 158, 0);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 10px;
-    box-shadow: 8px 8px 8px rgba(0, 0, 0, 0.2); 
+  min-width: 400px;
+  min-height: 300px;
+  background-color: rgb(231, 158, 0);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px;
+  box-shadow: 8px 8px 8px rgba(0, 0, 0, 0.2);
 }
 
 .form-text {
-    font-size: 20px;
-    padding: 10px;
+  font-size: 20px;
+  padding: 10px;
 }
 
 .input-box {
-    width: 200px;
-    height: 25px;
-    font-size: 20px;
-    margin: 5px;
+  width: 200px;
+  height: 25px;
+  font-size: 20px;
+  margin: 5px;
+  color: var(--gray-900);
+  background-color: var(--white);
 }
 
 .submit-button {
-    margin: 15px;
-    width: 100px;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
+  margin: 15px;
+  width: 100px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
 }
 
 .switch-button {
-    background-color: transparent;
-    color: rgb(0, 0, 0);
-    text-decoration: underline;
-    cursor: pointer;
-    border: none;
-    transition: color 0.3s;
+  background-color: transparent;
+  color: rgb(0, 0, 0);
+  text-decoration: underline;
+  cursor: pointer;
+  border: none;
+  transition: color 0.3s;
 }
 
 .switch-button:hover {
-    color: #fff;
+  color: #fff;
 }
