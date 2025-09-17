@@ -84,7 +84,7 @@ export default function Login() {
       const userData = await ApiService.signup(name, rawEmail, phone, pwd);
 
       localStorage.setItem("currentUser", JSON.stringify(userData));
-      navigate("/home");
+      navigate("/dashboard");
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
