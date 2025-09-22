@@ -78,7 +78,7 @@ class ApiService {
   }
 
   // Send money method
-  async sendMoney(clientId, amount, recipientEmail) {
+  async sendMoney(clientId, amount, recipientEmail, description = '') {
     if (isNaN(amount) || amount <= 0) {
       throw new Error('Invalid amount to send');
     }
@@ -92,12 +92,27 @@ class ApiService {
       body: JSON.stringify({
         amount: parseFloat(amount),
         recipient_email: recipientEmail,
+        description: description,
       }),
     });
 
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Send money failed');
+    }
+    return response.json();
+  }
+
+  // Get payment history
+  async getPaymentHistory(clientId, limit = 100) {
+    const response = await fetch(`${API_BASE_URL}/api/payment-history/${clientId}?limit=${limit}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch payment history');
     }
     return response.json();
   }
