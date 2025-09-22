@@ -10,6 +10,8 @@ from src.models.transaction import Transaction
 from src.models.alert import Alert
 from src.models.block import Block, BlockType
 from src.services.rules import RuleEngine
+from src.services.payment_reference import PaymentReferenceService
+from src.services.payment_history import PaymentHistoryService
 from pydantic import BaseModel
 from pydantic import PositiveFloat
 from typing import Optional, List
@@ -37,6 +39,7 @@ class UserLogin(BaseModel):
 class TransactionRequest(BaseModel):
     amount: PositiveFloat
     recipient_email: Optional[str] = None
+    description: Optional[str] = None  # Add description field
 
 class TransactionBase(BaseModel):
     amount: PositiveFloat
@@ -49,6 +52,7 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     recipient_email: Optional[str] = None
+    description: Optional[str] = None
 
 
 class TransactionResponse(TransactionBase):
@@ -99,6 +103,7 @@ class TransferIn(BaseModel):
     amount: PositiveFloat
     reference: Optional[str] = None
     method: Optional[str] = "p2p"
+    description: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -214,7 +219,8 @@ def send_money(client_id: int, transaction: TransactionCreate, db: Session = Dep
         recipient_account = Account(user_id=recipient_user.id, account_number=account_number, balance=0)
         db.add(recipient_account); db.commit(); db.refresh(recipient_account)
     payload = TransferIn(sender_account_id=sender_account.id, recipient_account_id=recipient_account.id,
-                         amount=transaction.amount, reference=transaction.reference, method="p2p")
+                         amount=transaction.amount, reference=transaction.reference, method="p2p", 
+                         description=transaction.description or "Payment transfer")
     return create_transfer(payload, db)
 
 @app.post("/api/transfers")
@@ -254,6 +260,12 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             raise HTTPException(status_code=409, detail={"message": "Transfer blocked", "violations": violations})
 
         # Allowed: move funds + create transaction atomically under the same lock
+        # Generate unique reference for this transaction
+        unique_reference = PaymentReferenceService.generate_unique_reference(db)
+        
+        # Use description from payload or create default
+        description = payload.description or "Payment transfer"
+        
         tx = Transaction(
             sender_id=sender.id,
             recipient_id=recipient.id,
@@ -262,7 +274,8 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             status="completed",
             kind="transfer",
             method=payload.method,
-            reference=payload.reference,
+            reference=unique_reference,
+            description=description,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
         )
@@ -272,6 +285,15 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
 
         db.add(tx)
         db.flush() # assign ID to tx
+
+        # Generate payment history for the transaction
+        try:
+            PaymentHistoryService.update_transaction_payment_history(
+                db, tx, description
+            )
+        except Exception as e:
+            # Log the error but don't fail the transaction
+            print(f"Warning: Failed to generate payment history: {e}")
 
         for a in alerts:
             a.transaction_id = tx.id
@@ -326,6 +348,30 @@ def remove_block(block_id: int, db: Session = Depends(get_db)):
     if not b: raise HTTPException(status_code=404, detail="Block not found")
     if b.removed_at is None: b.removed_at = datetime.now(timezone.utc); db.commit()
     return {"ok": True}
+
+@app.get("/api/payment-history/{client_id}")
+def get_payment_history(client_id: int, limit: int = 100, db: Session = Depends(get_db)):
+    """Get payment history for a client's account."""
+    # Get the user's account
+    account = db.query(Account).filter(Account.user_id == client_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    try:
+        payment_histories = PaymentHistoryService.get_payment_history_for_account(
+            db, account.id, limit
+        )
+        return {
+            "payment_history": payment_histories,
+            "total_count": len(payment_histories)
+        }
+    except Exception as e:
+        # Return empty list if there's an error (e.g., no payment history yet)
+        return {
+            "payment_history": [],
+            "total_count": 0,
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn
