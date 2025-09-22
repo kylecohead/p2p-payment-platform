@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ApiService from "../services/api";
 import "./Login.css";
+import ShadowLeft from "../assets/ShadowLeft.png";
+import ShadowRight from "../assets/ShadowRight.png";
+
 
 export default function Login() {
   const [searchParams] = useSearchParams();
@@ -98,6 +101,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <main className="login-page-content">
       <div className="login-card">
         <h2>{isLogin ? "Sign in" : "Sign Up"}</h2>
         {error && (
@@ -237,6 +241,10 @@ export default function Login() {
           )}
         </p>
       </div>
+    </main>
+      <footer className="login-page-footer">
+        <p>&copy; 2025 Waluigi Inc. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
