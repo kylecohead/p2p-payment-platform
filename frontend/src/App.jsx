@@ -17,7 +17,6 @@ function App() {
       {/* Public */}
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<LandingPage />} />
-      <Route path="/popup" element={<Popup blackText={"Payment made"} greenText={"succesfully"} />} />
       {/* Page not found */}
       <Route path="*" element={<NotFound />} />
       {/* Authenticated shell */}
