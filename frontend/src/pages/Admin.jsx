@@ -1,14 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Admin.css';
-import { examplePayments } from './examplePayments';
 
 
 export default function Admin() {
   const navigate = useNavigate();
   
     // Replace with real data
-    const payments = examplePayments;
+    const payments = null;
   
     const handleExport = () => {
       // TODO: Backend export functionality 
