@@ -84,6 +84,31 @@ h3 {
   background: var(--primary-dark);
 }
 
+/* Button variants */
+.btn.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.btn.btn-outline:hover {
+  background: var(--primary-fade);
+  color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+/* Icon/ghost button - for close icons etc. */
+.btn-icon {
+  background: transparent;
+  color: var(--gray-700);
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+.btn-icon:hover {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
 /* Cards */
 .card {
   background: var(--white);
@@ -208,6 +233,52 @@ select:focus {
   font-weight: 700;
 }
 
+/* Spacing utilities */
+.mt-4 {
+  margin-top: 1rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mb-0 {
+  margin-bottom: 0;
+}
+.p-8 {
+  padding: 2rem;
+}
+.p-12 {
+  padding: 3rem;
+}
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+/* Flex utilities */
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+.flex {
+  display: flex;
+}
+.items-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-2 {
+  gap: 0.5rem;
+}
+.gap-3 {
+  gap: 0.75rem;
+}
+
 /* Layout Shell - Grid Layout */
 .container {
   display: grid;
@@ -288,4 +359,52 @@ select:focus {
   grid-area: content;
   background: var(--white);
   padding: 1rem;
+}
+
+/* Side Panel (overlay + drawer) */
+.sp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+}
+
+.sp-panel {
+  position: fixed;
+  top: 0;
+  height: 100vh;
+  width: 420px;
+  max-width: 90vw;
+  background: var(--white);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: transform 200ms ease-out;
+}
+
+.sp-panel.right {
+  right: 0;
+  transform: translateX(100%);
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2);
+}
+
+.sp-panel.left {
+  left: 0;
+  transform: translateX(-100%);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+}
+
+.sp-panel.open {
+  transform: translateX(0);
+}
+
+.sp-panel-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.sp-panel-body {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1;
 }
