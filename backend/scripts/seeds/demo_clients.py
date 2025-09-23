@@ -33,6 +33,14 @@ SEED_USERS = [
         "balance": Decimal("5000.00"),
         "password": "MerchantPass1$",
     },
+    {
+        "name": "Admin User",
+        "email": "admin@example.local",
+        "phone": "+27-79-555-6677",
+        "balance": Decimal("20000.00"),
+        "password": "AdminPass1$",
+        "admin": True,
+    },
 ]
 
 def run():
@@ -57,6 +65,7 @@ def run():
                 name=data["name"],
                 email=data["email"],
                 phone=data["phone"],
+                admin=data.get("admin", False),
             )
             db.add(user)
             db.commit()

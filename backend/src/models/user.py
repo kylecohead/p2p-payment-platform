@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, UniqueConstraint
+from sqlalchemy import Column, Integer, String, UniqueConstraint, Boolean, text
 from sqlalchemy.orm import relationship
 from ..config.database import SPBase
 
@@ -14,8 +14,9 @@ class User(SPBase):
     email = Column(String(255), nullable=False)
     phone = Column(String(50), nullable=True)
     password_hash = Column(String(255), nullable=True)
+    admin = Column(Boolean, nullable=False, server_default=text("false"))
 
     accounts = relationship("Account", back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, name='{self.name}', email='{self.email}')>"
+        return f"<User(id={self.id}, name='{self.name}', email='{self.email}', admin={self.admin})>"

@@ -46,12 +46,13 @@ class AuthService:
         return user
     
     @staticmethod
-    def create_user_with_password(db: Session, name: str, email: str, phone: str, password: str) -> User:
+    def create_user_with_password(db: Session, name: str, email: str, phone: str, password: str, admin: bool = False) -> User:
         """Create a new user with a hashed password."""
         user = User(
             name=name,
             email=email,
-            phone=phone
+            phone=phone,
+            admin=admin,
         )
         AuthService.set_user_password(user, password)
         db.add(user)

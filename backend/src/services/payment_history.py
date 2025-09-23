@@ -128,18 +128,28 @@ class PaymentHistoryService:
             db, transaction, description, transaction.recipient_id
         )
         
-        # Store both perspectives in the payment history
-        payment_history = {
-            "sender_perspective": sender_history,
-            "recipient_perspective": recipient_history,
-            "description": description,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0"
-        }
-        
-        # Update the transaction
-        setattr(transaction, 'payment_history', payment_history)
-        db.add(transaction)
+        # Store both perspectives on the corresponding accounts' payment_history arrays
+        # Ensure account rows exist and initialize arrays if needed
+        sender_account = db.query(Account).filter(Account.id == transaction.sender_id).first()
+        recipient_account = db.query(Account).filter(Account.id == transaction.recipient_id).first()
+
+        if not sender_account or not recipient_account:
+            raise ValueError("Sender or recipient account not found when storing payment history")
+
+        # Prepare per-account perspective entries
+        # Append the perspective entry to the account.payment_history list (stored as JSON array)
+        # Initialize as list if None
+        if getattr(sender_account, 'payment_history', None) is None:
+            sender_account.payment_history = []
+        if getattr(recipient_account, 'payment_history', None) is None:
+            recipient_account.payment_history = []
+
+        # Append and commit
+        sender_account.payment_history.append(sender_history)
+        recipient_account.payment_history.append(recipient_history)
+
+        db.add(sender_account)
+        db.add(recipient_account)
         db.commit()
     
     @staticmethod
@@ -159,31 +169,14 @@ class PaymentHistoryService:
         Returns:
             List of payment history entries from the account's perspective
         """
-        # Get transactions where the account is either sender or recipient
-        transactions = db.query(Transaction).filter(
-            (Transaction.sender_id == account_id) | 
-            (Transaction.recipient_id == account_id)
-        ).filter(
-            Transaction.payment_history.isnot(None)
-        ).order_by(
-            Transaction.created_at.desc()
-        ).limit(limit).all()
-        
-        payment_histories = []
-        
-        for transaction in transactions:
-            payment_history = getattr(transaction, 'payment_history', None)
-            if not payment_history:
-                continue
-                
-            # Get the appropriate perspective
-            is_sender = transaction.sender_id == account_id
-            perspective_key = "sender_perspective" if is_sender else "recipient_perspective"
-            
-            if perspective_key in payment_history:
-                payment_histories.append(payment_history[perspective_key])
-        
-        return payment_histories
+        # Read payment history stored directly on the account row
+        account = db.query(Account).filter(Account.id == account_id).first()
+        if account and getattr(account, 'payment_history', None):
+            arr = account.payment_history or []
+            return list(reversed(arr))[:limit]
+
+        # No account-level history available
+        return []
     
     @staticmethod
     def generate_payment_description(
