@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import SidePanel from "../components/SidePanel";
+import TopupPanel from "../components/TopupPanel";
 import "./Dashboard.css";
 import ApiService from "../services/api";
-import { examplePayments } from "./examplePayments";
+import { examplePayments } from "./egPay";
 
 // using hard coded paymentss, filter for today
 const today = new Date().toISOString().slice(0, 10);
@@ -18,6 +20,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -81,7 +84,7 @@ export default function Dashboard() {
       <div className="page-header-with-actions">
         <h1 className="page-title">Dashboard</h1>
         <div className="page-actions">
-          <button className="btn top-up-btn" onClick={() => navigate("/topup")}>
+          <button className="btn top-up-btn" onClick={() => setPanelOpen(true)}>
             + Top up
           </button>
         </div>
@@ -116,6 +119,16 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Side panel for Topup */}
+      {panelOpen && (
+        <SidePanel title="Top up" onClose={() => setPanelOpen(false)}>
+          <TopupPanel
+            onCancel={() => setPanelOpen(false)}
+            onSuccess={() => setPanelOpen(false)}
+          />
+        </SidePanel>
+      )}
 
       {/* Payments table moved to /payments page */}
     </div>

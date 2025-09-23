@@ -1,28 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Payments.css';
-import ApiService from '../services/api';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import SidePanel from "../components/SidePanel";
+import SendPanel from "../components/SendPanel";
+import "./Payments.css";
+import ApiService from "../services/api";
 
 export default function Payments() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     const fetchPaymentHistory = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('currentUser'));
+        const userData = JSON.parse(localStorage.getItem("currentUser"));
         if (!userData) {
-          navigate('/login');
+          navigate("/login");
           return;
         }
 
         const response = await ApiService.getPaymentHistory(userData.id);
         setPayments(response.payment_history || []);
       } catch (err) {
-        console.error('Failed to fetch payment history:', err);
-        setError('Failed to load payment history');
+        console.error("Failed to fetch payment history:", err);
+        setError("Failed to load payment history");
         setPayments([]); // Fallback to empty array
       } finally {
         setLoading(false);
@@ -33,18 +36,18 @@ export default function Payments() {
   }, [navigate]);
 
   const handleNewPayment = () => {
-    navigate('/send'); // Navigate to existing Send page
+    setPanelOpen(true);
   };
 
   const handleExport = () => {
-    // TODO: Backend export functionality 
-    alert('Export functionality coming soon');
+    // TODO: Backend export functionality
+    alert("Export functionality coming soon");
   };
 
   // Calculate totals
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
-  const credits = payments.filter(p => p.type === 'Credit');
-  const debits = payments.filter(p => p.type === 'Debit');
+  const credits = payments.filter((p) => p.type === "Credit");
+  const debits = payments.filter((p) => p.type === "Debit");
   const totalCredits = credits.reduce((sum, p) => sum + p.amount, 0);
   const totalDebits = debits.reduce((sum, p) => sum + p.amount, 0);
 
@@ -63,11 +66,11 @@ export default function Payments() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
+        <div style={{ textAlign: "center", padding: "2rem" }}>
           Loading payment history...
         </div>
       ) : error ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
+        <div style={{ textAlign: "center", padding: "2rem", color: "red" }}>
           {error}
         </div>
       ) : (
@@ -85,14 +88,18 @@ export default function Payments() {
             </div>
             <div className="payment-card stat-card debit">
               <div className="card-header">Debits</div>
-              <div className="card-value">R{Math.abs(totalDebits).toFixed(2)}</div>
+              <div className="card-value">
+                R{Math.abs(totalDebits).toFixed(2)}
+              </div>
               <div className="card-subtitle">{debits.length} records</div>
             </div>
           </div>
 
           <div className="payments-table-container">
             {payments.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
+              <div
+                style={{ textAlign: "center", padding: "3rem", color: "#666" }}
+              >
                 No payment history yet. Make your first payment to see it here!
               </div>
             ) : (
@@ -117,8 +124,14 @@ export default function Payments() {
                       <td>{p.time}</td>
                       <td>{p.date}</td>
                       <td>{p.name}</td>
-                      <td style={{color: p.amount < 0 ? 'red' : 'green', fontWeight: 'bold'}}>
-                        {p.amount < 0 ? '-' : ''}R{Math.abs(p.amount).toFixed(2)}
+                      <td
+                        style={{
+                          color: p.amount < 0 ? "red" : "green",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {p.amount < 0 ? "-" : ""}R
+                        {Math.abs(p.amount).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -127,6 +140,15 @@ export default function Payments() {
             )}
           </div>
         </>
+      )}
+
+      {panelOpen && (
+        <SidePanel title="New payment" onClose={() => setPanelOpen(false)}>
+          <SendPanel
+            onCancel={() => setPanelOpen(false)}
+            onSuccess={() => setPanelOpen(false)}
+          />
+        </SidePanel>
       )}
     </div>
   );
