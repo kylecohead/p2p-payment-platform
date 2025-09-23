@@ -1,52 +1,106 @@
-.login-page{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+.login-page {
+  display: grid;
+    grid-template-rows: 60px 1fr 60px;
+  grid-template-areas:
+    "topBar"
+    "content"
+    "footer";
+  min-height: 100vh;
+  min-width: 100vw;
+  background: var(--white);
+}
+.login-page-content {
+  grid-area: content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--white);
+  position: relative;
+  padding: 2rem;
 }
 
 .login-card {
-    min-width: 400px;
-    min-height: 300px;
-    background-color: rgb(231, 158, 0);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 10px;
-    box-shadow: 8px 8px 8px rgba(0, 0, 0, 0.2); 
+  background-color: var(--gray-100);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.login-card h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--gray-900);
 }
 
 .form-text {
-    font-size: 20px;
-    padding: 10px;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  color: var(--gray-800);
 }
 
 .input-box {
-    width: 200px;
-    height: 25px;
-    font-size: 20px;
-    margin: 5px;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  background-color: var(--gray-50);
+  color: var(--gray-900);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  border-color: var(--green, rgb(231, 158, 0));
+  box-shadow: 0 0 0 3px rgba(231, 158, 0, 0.2);
+  outline: none;
 }
 
 .submit-button {
-    margin: 15px;
-    width: 100px;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--primary, rgb(231, 158, 0));
+  color: var(--white);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-button:hover {
+  background-color: rgb(206, 140, 0);
 }
 
 .switch-button {
-    background-color: transparent;
-    color: rgb(0, 0, 0);
-    text-decoration: underline;
-    cursor: pointer;
-    border: none;
-    transition: color 0.3s;
+  background: none;
+  border: none;
+  color: var(--primary, rgb(231, 158, 0));
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.9rem;
+  padding: 0;
+  transition: color 0.3s ease;
 }
 
 .switch-button:hover {
-    color: #fff;
+  color: var(--gray-900);
+}
+
+.login-page-footer {
+  grid-area: footer;
+  background: var(--light-gray);
+  border-top: 1px solid var(--gray-200);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  font-size: small;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
 }

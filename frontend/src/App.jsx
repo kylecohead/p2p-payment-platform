@@ -7,6 +7,8 @@ import Send from "./pages/Send";
 import Payments from './pages/Payments';
 import Layout from './components/Layout';
 import Admin from './pages/Admin';
+import Popup from './components/Popup';
+import NotFound from "./pages/NotFound";
 import './App.css'
 
 function App() {
@@ -15,6 +17,9 @@ function App() {
       {/* Public */}
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<LandingPage />} />
+      <Route path="/popup" element={<Popup blackText={"Payment made"} greenText={"succesfully"} />} />
+      {/* Page not found */}
+      <Route path="*" element={<NotFound />} />
       {/* Authenticated shell */}
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<Dashboard />} />

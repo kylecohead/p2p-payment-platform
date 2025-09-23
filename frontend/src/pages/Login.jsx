@@ -1,14 +1,25 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ApiService from "../services/api";
-import './Login.css';
+import "./Login.css";
+import ShadowLeft from "../assets/ShadowLeft.png";
+import ShadowRight from "../assets/ShadowRight.png";
+
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  // Check if we should show signup form based on URL parameter
+  useEffect(() => {
+    if (searchParams.get("mode") === "signup") {
+      setIsLogin(false);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,14 +36,16 @@ export default function Login() {
       return setError("Please enter a valid email address.");
     }
     if (!validatePassword(pwd)) {
-      return setError("Password must be at least 8 characters and include uppercase, lowercase, and a number.");
+      return setError(
+        "Password must be at least 8 characters and include uppercase, lowercase, and a number."
+      );
     }
     try {
       const userData = await ApiService.login(email, password);
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      navigate('/dashboard');
+      localStorage.setItem("currentUser", JSON.stringify(userData));
+      navigate("/dashboard");
     } catch (err) {
-      setError('Login failed. Please check your credentials.');
+      setError("Sign in failed. Please check your credentials.");
     }
   };
 
@@ -62,7 +75,9 @@ export default function Login() {
       return setError("Please enter a valid phone number.");
     }
     if (!validatePassword(pwd)) {
-      return setError("Password must be at least 8 characters and include uppercase, lowercase, and a number.");
+      return setError(
+        "Password must be at least 8 characters and include uppercase, lowercase, and a number."
+      );
     }
     if (!validateConfirmPassword(pwd, confirm)) {
       return setError("Passwords do not match.");
@@ -72,90 +87,166 @@ export default function Login() {
       const userData = await ApiService.signup(name, rawEmail, phone, pwd);
 
       localStorage.setItem("currentUser", JSON.stringify(userData));
-      navigate("/home");
+      navigate("/dashboard");
     } catch (err) {
       const msg =
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Signup failed. Please try again.";
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Signup failed. Please try again.";
 
       setError(msg);
     }
   };
 
-
   return (
-      <div className="login-page">
-        <div className="login-card">
-          <h2>{isLogin ? "Login" : "Sign Up"}</h2>
-          {error && <div style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
+    <div className="login-page">
+      <main className="login-page-content">
+      <div className="login-card">
+        <h2>{isLogin ? "Sign in" : "Sign Up"}</h2>
+        {error && (
+          <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+        )}
+        {isLogin ? (
+          <form onSubmit={handleLogin}>
+            <div>
+              <label htmlFor="email" className="form-text">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                className="input-box"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="form-text">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                className="input-box"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            <button type="submit" className="submit-button">
+              Sign in
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSignup}>
+            <div>
+              <label htmlFor="new-name" className="form-text">
+                Name
+              </label>
+              <input
+                type="text"
+                id="new-name"
+                name="name"
+                className="input-box"
+                required
+                autoComplete="name"
+              />
+            </div>
+            <div>
+              <label htmlFor="new-email" className="form-text">
+                Email
+              </label>
+              <input
+                type="email"
+                id="new-email"
+                name="email"
+                className="input-box"
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div>
+              <label htmlFor="new-phone" className="form-text">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="new-phone"
+                name="phone"
+                className="input-box"
+                required
+                autoComplete="tel"
+              />
+            </div>
+            <div>
+              <label htmlFor="new-password" className="form-text">
+                Password
+              </label>
+              <input
+                type="password"
+                id="new-password"
+                name="password"
+                className="input-box"
+                required
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirm-password" className="form-text">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirm-password"
+                name="confirmPassword"
+                className="input-box"
+                required
+                autoComplete="new-password"
+              />
+            </div>
+            <button type="submit" className="submit-button">
+              Sign Up
+            </button>
+          </form>
+        )}
+        <p>
           {isLogin ? (
-              <form onSubmit={handleLogin}>
-                <div>
-                  <label htmlFor="email" className="form-text">Email</label>
-                  <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      className="input-box"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      autoComplete="email"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="password" className="form-text">Password</label>
-                  <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      className="input-box"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoComplete="current-password"
-                  />
-                </div>
-                <button type="submit" className="submit-button">Login</button>
-              </form>
+            <>
+              Don't have an account?{" "}
+              <button
+                type="button"
+                className="switch-button"
+                onClick={() => setIsLogin(false)}
+              >
+                Sign Up
+              </button>
+            </>
           ) : (
-              <form onSubmit={handleSignup}>
-                <div>
-                  <label htmlFor="new-name" className="form-text">Name</label>
-                  <input type="text" id="new-name" name="name" className="input-box" required autoComplete="name" />
-                </div>
-                <div>
-                  <label htmlFor="new-email" className="form-text">Email</label>
-                  <input type="email" id="new-email" name="email" className="input-box" required autoComplete="email" />
-                </div>
-                <div>
-                  <label htmlFor="new-phone" className="form-text">Phone Number</label>
-                  <input type="tel" id="new-phone" name="phone" className="input-box" required autoComplete="tel" />
-                </div>
-                <div>
-                  <label htmlFor="new-password" className="form-text">Password</label>
-                  <input type="password" id="new-password" name="password" className="input-box" required autoComplete="new-password" />
-                </div>
-                <div>
-                  <label htmlFor="confirm-password" className="form-text">Confirm Password</label>
-                  <input type="password" id="confirm-password" name="confirmPassword" className="input-box" required autoComplete="new-password" />
-                </div>
-                <button type="submit" className="submit-button">Sign Up</button>
-              </form>
+            <>
+              Already have an account?{" "}
+              <button
+                type="button"
+                className="switch-button"
+                onClick={() => setIsLogin(true)}
+              >
+                Sign in
+              </button>
+            </>
           )}
-          <p>
-            {isLogin ? (
-                <>Don't have an account? <button type="button" className="switch-button" onClick={() => setIsLogin(false)}>Sign Up</button></>
-            ) : (
-                <>Already have an account? <button type="button" className="switch-button" onClick={() => setIsLogin(true)}>Login</button></>
-            )}
-          </p>
-        </div>
+        </p>
       </div>
+    </main>
+      <footer className="login-page-footer">
+        <p>&copy; 2025 Waluigi Inc. All rights reserved.</p>
+      </footer>
+    </div>
   );
-
 }
 // ----- HELPER FUNCTIONS -----
 

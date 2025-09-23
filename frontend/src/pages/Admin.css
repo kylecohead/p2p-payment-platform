@@ -1,0 +1,54 @@
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+}
+
+.btn-outline:hover { 
+  background: var(--gray-200); 
+}
+
+/* Color overrides for payment cards - base style in global.css */
+.payment-card.succeeded {
+  border-left-color: var(--success);
+}
+
+.payment-card.flagged {
+  border-left-color: var(--warning);
+}
+
+.payment-card.blocked {
+  border-left-color: var(--error);
+}
+
+/* Table placeholder spacing */
+.admin-table-container { 
+  margin-top: 1rem;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.payments-section {
+  margin-top: 2rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  background: var(--gray-200);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.admin-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
