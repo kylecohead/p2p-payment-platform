@@ -10,6 +10,7 @@ from sqlalchemy import (
     text,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import relationship
 from ..config.database import SPBase
 
@@ -26,6 +27,8 @@ class Transaction(SPBase):
     kind = Column(String(30), nullable=False, server_default="transfer")     
     method = Column(String(30), nullable=True)                              
     reference = Column(String(128), nullable=True, unique=False)
+    description = Column(String(255), nullable=True)  # Payment description
+    payment_history = Column(JSON, nullable=True)  # JSON field for payment history metadata
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),

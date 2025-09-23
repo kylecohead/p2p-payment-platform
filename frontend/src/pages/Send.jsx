@@ -6,6 +6,7 @@ import ApiService from "../services/api";
 export default function Send() {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function Send() {
         return;
       }
 
-      await ApiService.sendMoney(userData.id, amount, recipientEmail);
+      await ApiService.sendMoney(userData.id, amount, recipientEmail, description);
       
       // Update user data in localStorage
       const updatedUser = await ApiService.getClient(userData.id);
@@ -34,6 +35,7 @@ export default function Send() {
   const handleCancel = () => {
     setRecipientEmail("");
     setAmount("");
+    setDescription("");
     navigate("/");
   };
 
@@ -66,6 +68,15 @@ export default function Send() {
                 min="0.01"
                 step="0.01"
                 required
+              />
+            </div>
+            <div>
+              <label>Description:</label>
+              <input
+                type="text"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="What's this payment for?"
               />
             </div>
             <button type="submit">Submit</button>
