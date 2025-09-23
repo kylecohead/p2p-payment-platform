@@ -13,32 +13,32 @@ export default function Send() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const userData = JSON.parse(localStorage.getItem('currentUser'));
+      const userData = JSON.parse(localStorage.getItem("currentUser"));
       if (!userData) {
-        navigate('/login');
+        navigate("/dashboard");
         return;
       }
 
       await ApiService.sendMoney(userData.id, amount, recipientEmail);
-      
+
       // Update user data in localStorage
       const updatedUser = await ApiService.getClient(userData.id);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
       setSubmitted(true);
     } catch (err) {
-      setError(err.message || 'Send failed. Please try again.');
+      setError(err.message || "Send failed. Please try again.");
     }
   };
 
   const handleCancel = () => {
     setRecipientEmail("");
     setAmount("");
-    navigate("/");
+    navigate("/dashboard");
   };
 
   const handleReturnHome = () => {
-    navigate("/");
+    navigate("/dashboard");
   };
 
   return (
@@ -46,14 +46,16 @@ export default function Send() {
       {!submitted ? (
         <>
           <h2>Send Money</h2>
-          {error && <div style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
+          {error && (
+            <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+          )}
           <form className="send-form" onSubmit={handleSubmit}>
             <div>
               <label>Recipient Email:</label>
               <input
                 type="email"
                 value={recipientEmail}
-                onChange={e => setRecipientEmail(e.target.value)}
+                onChange={(e) => setRecipientEmail(e.target.value)}
                 required
               />
             </div>
@@ -62,21 +64,25 @@ export default function Send() {
               <input
                 type="number"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value)}
                 min="0.01"
                 step="0.01"
                 required
               />
             </div>
             <button type="submit">Submit</button>
-            <button type="button" onClick={handleCancel}>Cancel</button>
+            <button type="button" onClick={handleCancel}>
+              Cancel
+            </button>
           </form>
         </>
-      ) : ( // After valid submitted send, show confirmation message
+      ) : (
+        // After valid submitted send, show confirmation message
         <div style={{ textAlign: "center" }}>
           <h2>Success!</h2>
           <p>
-            Sent <strong>${amount}</strong> to <strong>{recipientEmail}</strong>.
+            Sent <strong>${amount}</strong> to <strong>{recipientEmail}</strong>
+            .
           </p>
           <button onClick={handleReturnHome}>Return to Home</button>
         </div>
