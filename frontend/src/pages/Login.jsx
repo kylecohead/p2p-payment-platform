@@ -122,6 +122,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                placeholder="email@example.com"
               />
             </div>
             <div>
@@ -137,6 +138,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                placeholder="Enter at least 8 characters"
               />
             </div>
             <button type="submit" className="submit-button">
@@ -156,6 +158,7 @@ export default function Login() {
                 className="input-box"
                 required
                 autoComplete="name"
+                placeholder="Your full name"
               />
             </div>
             <div>
@@ -169,6 +172,7 @@ export default function Login() {
                 className="input-box"
                 required
                 autoComplete="email"
+                placeholder="email@example.com"
               />
             </div>
             <div>
@@ -182,6 +186,7 @@ export default function Login() {
                 className="input-box"
                 required
                 autoComplete="tel"
+                placeholder="+1234567890"
               />
             </div>
             <div>
@@ -195,6 +200,7 @@ export default function Login() {
                 className="input-box"
                 required
                 autoComplete="new-password"
+                placeholder="Enter at least 8 characters"
               />
             </div>
             <div>
@@ -208,6 +214,7 @@ export default function Login() {
                 className="input-box"
                 required
                 autoComplete="new-password"
+                placeholder="Enter at least 8 characters"
               />
             </div>
             <button type="submit" className="submit-button">
@@ -215,7 +222,7 @@ export default function Login() {
             </button>
           </form>
         )}
-        <p>
+        <p className="switch-text">
           {isLogin ? (
             <>
               Don't have an account?{" "}

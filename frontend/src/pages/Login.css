@@ -46,13 +46,10 @@
   padding: 0.75rem;
   font-size: 1rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--gray-300);
   border-radius: 6px;
   background-color: var(--gray-50);
   color: var(--gray-900);
   transition: border-color 0.3s, box-shadow 0.3s;
-  border-color: var(--green, rgb(231, 158, 0));
-  box-shadow: 0 0 0 3px rgba(231, 158, 0, 0.2);
   outline: none;
 }
 
@@ -62,14 +59,14 @@
   font-size: 1rem;
   border: none;
   border-radius: 6px;
-  background-color: var(--primary, rgb(231, 158, 0));
+  background-color: var(--primary);
   color: var(--white);
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .submit-button:hover {
-  background-color: rgb(206, 140, 0);
+  background-color: var(--primary-dark);
 }
 
 .switch-button {
@@ -85,6 +82,11 @@
 
 .switch-button:hover {
   color: var(--gray-900);
+}
+
+.switch-text {
+  text-align: center;
+  margin-top: 1rem;
 }
 
 .login-page-footer {
