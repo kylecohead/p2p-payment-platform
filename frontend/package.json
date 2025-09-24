@@ -7,9 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "test": "vitest",
-    "test:ci": "vitest --run --reporter=junit --outputFile=jest-junit.xml"
+    "preview": "vite preview"
   },
   "dependencies": {
     "react": "^19.1.1",
