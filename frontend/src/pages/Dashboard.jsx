@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import TopupPanel from "../components/TopupPanel";
+import Popup from '../components/Popup';
 import "./Dashboard.css";
 import ApiService from "../services/api";
 
@@ -16,6 +17,13 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(0);
   // no polling; we'll fetch once on mount / on focus
   const [panelOpen, setPanelOpen] = useState(false);
+  const [topupPopupOpen, setTopupPopupOpen] = useState(false);
+
+  // Closes the popup and navigates to /dashboard
+  function onTopupPopupClose() {
+    setTopupPopupOpen(false);
+    window.location.reload();
+  }
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -139,6 +147,10 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
+
+      {/* Topup success popup */}
+      <Popup blackText="Top up " greenText="successful!" showPopup={topupPopupOpen} setShowPopup={setTopupPopupOpen} onClose={onTopupPopupClose} />
+
       <div className="page-header-with-actions">
         <h1 className="page-title">Dashboard</h1>
         <div className="page-actions">
@@ -183,7 +195,10 @@ export default function Dashboard() {
         <SidePanel title="Top up" onClose={() => setPanelOpen(false)}>
           <TopupPanel
             onCancel={() => setPanelOpen(false)}
-            onSuccess={() => setPanelOpen(false)}
+            onSuccess={() => {
+              setPanelOpen(false);
+              setTopupPopupOpen(true);
+            }}
           />
         </SidePanel>
       )}

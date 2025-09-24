@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import SendPanel from "../components/SendPanel";
+import Popup from '../components/Popup';
 import "./Payments.css";
 import ApiService from "../services/api";
 
@@ -11,6 +12,7 @@ export default function Payments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
+  const [sendPopupOpen, setSendPopupOpen] = useState(false);
 
   useEffect(() => {
     const fetchPaymentHistory = async () => {
@@ -35,6 +37,12 @@ export default function Payments() {
     fetchPaymentHistory();
   }, [navigate]);
 
+  // Closes the popup and navigates to /dashboard
+  function onSendPopupClose() {
+    setSendPopupOpen(false);
+    window.location.reload();
+  }
+
   const handleNewPayment = () => {
     setPanelOpen(true);
   };
@@ -53,6 +61,10 @@ export default function Payments() {
 
   return (
     <div className="payments-page">
+
+      {/* Send success popup */}
+      <Popup blackText="Payment " greenText="successful!" showPopup={sendPopupOpen} setShowPopup={setSendPopupOpen} onClose={onSendPopupClose} />
+
       <div className="page-header-with-actions">
         <h1 className="page-title">Payments</h1>
         <div className="page-actions">
@@ -146,7 +158,10 @@ export default function Payments() {
         <SidePanel title="New payment" onClose={() => setPanelOpen(false)}>
           <SendPanel
             onCancel={() => setPanelOpen(false)}
-            onSuccess={() => setPanelOpen(false)}
+            onSuccess={() => {
+              setPanelOpen(false);
+              setSendPopupOpen(true);
+            }}
           />
         </SidePanel>
       )}
