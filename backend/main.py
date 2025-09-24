@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -269,8 +270,9 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             db.rollback()                       # release row locks
             for a in alerts:
                 db.add(a)
-            db.commit()                         # persist alerts even for blocked attempts
-            raise HTTPException(status_code=409, detail={"message": "Transfer blocked", "violations": violations})
+            db.commit()  
+            violations_str = json.dumps(violations, default=str)                       # persist alerts even for blocked attempts
+            raise HTTPException(status_code=409, detail={"GG you are cooked"})
 
         # Allowed: move funds + create transaction atomically under the same lock
         # Generate unique reference for this transaction
