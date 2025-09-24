@@ -125,8 +125,9 @@ class RuleEngine:
             ))
             violations.append("DAILY_AMOUNT_LIMIT_EXCEEDED")
 
-        allowed = len([v for v in violations if v in ("BLOCKED_SENDER","BLOCKED_RECIPIENT","NEGATIVE_BAL",
+        """ allowed = len([v for v in violations if v in ("BLOCKED_SENDER","BLOCKED_RECIPIENT","NEGATIVE_BAL",
                                                        "AMOUNT_TOO_LARGE", "TOO_MANY_TRANSACTIONS_60S",
                                                        "DAILY_AMOUNT_LIMIT_EXCEEDED", "ZERO_BAL"
-                                                       )]) == 0
+                                                       )]) == 0 """
+        allowed = len(violations) == 0 # temporary autoblock for any violation
         return allowed, alerts, violations
