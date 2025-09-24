@@ -18,6 +18,5 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: []
-  },
-  test: { environment: 'jsdom', setupFiles: './src/setupTests.js' }
+  }
 })
