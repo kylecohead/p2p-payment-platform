@@ -74,21 +74,57 @@ export default function Dashboard() {
         const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
         if (!parsed || !parsed.id) return;
         const updatedClientId = ev?.detail?.clientId;
-        // If event doesn't include clientId, always reload; otherwise only reload for matching id
-        if (!updatedClientId || Number(updatedClientId) === Number(parsed.id)) {
-          loadClientAndPayments();
+        // If event doesn't include clientId, always proceed; otherwise only proceed for matching id
+        if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
+
+        // If the event payload includes recent_payment_history or new_balance, apply it immediately
+        const payloadData = ev?.detail?.data;
+        if (payloadData) {
+          if (payloadData.recent_payment_history) {
+            setUser((u) => ({ ...(u || {}), recent_payment_history: payloadData.recent_payment_history }));
+            try {
+              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payloadData.recent_payment_history }));
+            } catch (e) {}
+          }
+          if (payloadData.new_balance !== undefined) {
+            setBalance(Number(payloadData.new_balance) || 0);
+          }
         }
+
+        // Reconcile with server in background to ensure full, consistent view
+        loadClientAndPayments();
       } catch (e) {
         // ignore
       }
     };
     window.addEventListener('account:updated', onAccountUpdated);
+      const onPaymentHistoryUpdated = (ev) => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          if (!parsed || !parsed.id) return;
+          const updatedClientId = ev?.detail?.clientId;
+          if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
+          const payment_history = ev?.detail?.payment_history;
+          if (payment_history) {
+            setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+            try {
+              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+            } catch (e) {}
+          }
+        } catch (e) {
+          // ignore
+        }
+      };
+      window.addEventListener('payment-history:updated', onPaymentHistoryUpdated);
 
     return () => {
       aborted = true;
-      window.removeEventListener("focus", onVis);
-      document.removeEventListener("visibilitychange", onVis);
+  window.removeEventListener("focus", onVis);
+  document.removeEventListener("visibilitychange", onVis);
   window.removeEventListener('account:updated', onAccountUpdated);
+  window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
     };
   }, [navigate]);
 
