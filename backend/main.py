@@ -80,6 +80,7 @@ class UserResponse(UserBase):
     balance: float
     account_id: Optional[int] = None
     account_number: Optional[str] = None
+    admin: Optional[bool] = False
 
     class Config:
         orm_mode = True
@@ -128,6 +129,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
     "balance": float(balance_value) if balance_value is not None else 0.0,
     "account_id": account.id if account is not None else None,
     "account_number": account.account_number if account is not None else None,
+    "admin": bool(user.admin),
     }
 
 @app.post("/api/signup", response_model=UserResponse)
@@ -156,6 +158,7 @@ def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
     "balance": float(new_account.balance) if new_account.balance is not None else 0.0,
     "account_id": new_account.id,
     "account_number": new_account.account_number,
+    "admin": bool(user.admin),
     }
 
 @app.get("/api/client/{client_id}", response_model=UserResponse)
@@ -166,14 +169,24 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
 
     account = db.query(Account).filter(Account.user_id == user.id).first()
     balance_value = getattr(account, 'balance', 0) if account else 0
+    # Attach a small recent payment history for dashboard use
+    payment_history = []
+    try:
+        if account:
+            payment_history = account.get_payment_history(db, limit=5)
+    except Exception:
+        payment_history = []
+
     return {
         "id": user.id,
         "name": user.name,
         "email": user.email,
         "phone": user.phone,
-    "balance": float(balance_value) if balance_value is not None else 0.0,
-    "account_id": account.id if account is not None else None,
-    "account_number": account.account_number if account is not None else None,
+        "balance": float(balance_value) if balance_value is not None else 0.0,
+        "account_id": account.id if account is not None else None,
+        "account_number": account.account_number if account is not None else None,
+        "admin": bool(user.admin),
+        "recent_payment_history": payment_history,
     }
 
 @app.post("/api/topup/{client_id}")

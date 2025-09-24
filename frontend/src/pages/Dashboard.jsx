@@ -6,20 +6,15 @@ import SidePanel from "../components/SidePanel";
 import TopupPanel from "../components/TopupPanel";
 import "./Dashboard.css";
 import ApiService from "../services/api";
-import { examplePayments } from "./egPay";
 
-// using hard coded paymentss, filter for today
+// We'll derive today's totals from the recent_payment_history returned by the backend.
 const today = new Date().toISOString().slice(0, 10);
-const paymentsToday = examplePayments.filter((p) => p.date === today);
-const creditsToday = paymentsToday.filter((p) => p.type === "Credit");
-const debitsToday = paymentsToday.filter((p) => p.type === "Debit");
-const totalCreditsToday = creditsToday.reduce((sum, p) => sum + p.amount, 0);
-const totalDebitsToday = debitsToday.reduce((sum, p) => sum + p.amount, 0);
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
+  // no polling; we'll fetch once on mount / on focus
   const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
@@ -33,51 +28,62 @@ export default function Dashboard() {
     setUser(parsed);
     setBalance(Number(parsed.balance) || 0);
 
-    let id; // interval id
     let aborted = false;
 
-    async function refresh() {
+    // Fetch client info and today's payments once.
+    async function loadClientAndPayments() {
       if (aborted) return;
       try {
         const fresh = await ApiService.getClient(parsed.id);
         setBalance(Number(fresh.balance) || 0);
-        setUser((u) => ({ ...(u || {}), ...fresh })); // <- safe spread
-        localStorage.setItem(
-          "currentUser",
-          JSON.stringify({
-            ...JSON.parse(localStorage.getItem("currentUser") || "{}"),
-            ...fresh,
-          })
-        );
+        setUser((u) => ({ ...(u || {}), ...fresh }));
+        try {
+          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
+        } catch (e) {}
       } catch (e) {
-        console.error("Balance refresh failed", e);
+        console.error("Initial client load failed", e);
+      }
+
+      try {
+        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
+        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
+        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+        try {
+          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+        } catch (e) {}
+      } catch (e) {
+        console.error("Payment history load failed", e);
       }
     }
 
-    function schedule() {
-      const ms = document.visibilityState === "visible" ? 1000 : 5000;
-      clearInterval(id);
-      id = setInterval(refresh, ms);
-    }
-
-    // kick it off
-    refresh();
-    schedule();
+    // run initial load and also when window regains focus or visibility changes
+    (async () => {
+      await loadClientAndPayments();
+    })();
 
     const onVis = () => {
-      refresh();
-      schedule();
+      loadClientAndPayments();
     };
     window.addEventListener("focus", onVis);
     document.addEventListener("visibilitychange", onVis);
 
     return () => {
       aborted = true;
-      clearInterval(id);
       window.removeEventListener("focus", onVis);
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [navigate]);
+
+  // derive payments from the user's recent_payment_history; show only today's payments
+  const recentPayments = (user && user.recent_payment_history) || [];
+  // recent_payment_history entries expected: { date, time, type, amount, description, name }
+  const paymentsToday = recentPayments.filter((p) => p.date === today);
+  const creditsToday = paymentsToday.filter((p) => p.type === "Credit");
+  const debitsToday = paymentsToday.filter((p) => p.type === "Debit");
+  const totalCreditsToday = creditsToday.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const totalDebitsToday = debitsToday.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   return (
     <div className="dashboard">
@@ -130,7 +136,36 @@ export default function Dashboard() {
         </SidePanel>
       )}
 
-      {/* Payments table moved to /payments page */}
+      {/* Today's payments */}
+      <div className="today-payments">
+        <h3>Today's transactions</h3>
+        {paymentsToday.length === 0 ? (
+          <div className="empty">No transactions today</div>
+        ) : (
+          <table className="payments-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Party</th>
+                <th>Description</th>
+                <th className="amount-col">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentsToday.map((p) => (
+                <tr key={p.transaction_id || `${p.date}-${p.time}-${p.amount}`}>
+                  <td>{p.time}</td>
+                  <td>{p.name}</td>
+                  <td>{p.description}</td>
+                  <td className={`amount-col ${p.type === "Credit" ? "positive" : "negative"}`}>
+                    R{Number(p.amount).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

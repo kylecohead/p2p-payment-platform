@@ -57,6 +57,7 @@ class RuleEngine:
 
         # Balance checks (hard stops per good banking sense)
         new_balance = (sender.balance or Decimal("0")) - amount
+        # Negative balance rule
         if new_balance < 0:
             alerts.append(Alert(
                 sender_account_id=sender.id,
@@ -66,6 +67,7 @@ class RuleEngine:
                 created_at=now, updated_at=now, cleared=False
             ))
             violations.append("NEGATIVE_BAL")
+            # Zero balance rule
         elif new_balance == 0:
             alerts.append(Alert(
                 sender_account_id=sender.id,
@@ -74,6 +76,7 @@ class RuleEngine:
                 message="Transfer would drain the account to exactly zero.",
                 created_at=now, updated_at=now, cleared=False
             ))
+            violations.append("ZERO_BAL")
 
         # Amount rule (> R5000)
         if amount > AMOUNT_LIMIT:
@@ -84,6 +87,7 @@ class RuleEngine:
                 message=f"Transfer amount exceeds R{AMOUNT_LIMIT.normalize()}.",
                 created_at=now, updated_at=now, cleared=False
             ))
+            violations.append("AMOUNT_TOO_LARGE")
 
         # Burst rule: more than 3 transfers in 60s
         window_start = now - timedelta(seconds=BURST_WINDOW_SECONDS)
@@ -101,6 +105,7 @@ class RuleEngine:
                 message=f"More than {BURST_MAX} transfers initiated within {BURST_WINDOW_SECONDS}s.",
                 created_at=now, updated_at=now, cleared=False
             ))
+            violations.append("TOO_MANY_TRANSACTIONS_60S")
 
         # Daily total sent (> R10000)
         start_of_day = cls._start_of_local_day(now)
@@ -118,6 +123,11 @@ class RuleEngine:
                 message=f"Projected daily total sent exceeds R{DAILY_LIMIT.normalize()}.",
                 created_at=now, updated_at=now, cleared=False
             ))
+            violations.append("DAILY_AMOUNT_LIMIT_EXCEEDED")
 
-        allowed = len([v for v in violations if v in ("BLOCKED_SENDER","BLOCKED_RECIPIENT","NEGATIVE_BAL")]) == 0
+        """ allowed = len([v for v in violations if v in ("BLOCKED_SENDER","BLOCKED_RECIPIENT","NEGATIVE_BAL",
+                                                       "AMOUNT_TOO_LARGE", "TOO_MANY_TRANSACTIONS_60S",
+                                                       "DAILY_AMOUNT_LIMIT_EXCEEDED", "ZERO_BAL"
+                                                       )]) == 0 """
+        allowed = len(violations) == 0 # temporary autoblock for any violation
         return allowed, alerts, violations
