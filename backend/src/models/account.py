@@ -25,5 +25,7 @@ class Account(SPBase):
 
     def get_payment_history(self, db, limit: int = 100) -> List[Dict[str, Any]]:
         """Return payment history entries for this account via the PaymentHistoryService."""
+        from ..services.payment_history import PaymentHistoryService
+        return PaymentHistoryService.get_payment_history_for_account(db, self.id, limit)
  
- 
+

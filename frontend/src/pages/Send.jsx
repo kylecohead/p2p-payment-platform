@@ -92,7 +92,7 @@ export default function Send() {
         <div style={{ textAlign: "center" }}>
           <h2>Success!</h2>
           <p>
-            Sent <strong>${amount}</strong> to <strong>{recipientEmail}</strong>
+            Sent <strong>R{amount}</strong> to <strong>{recipientEmail}</strong>
             .
           </p>
           <button onClick={handleReturnHome}>Return to Home</button>

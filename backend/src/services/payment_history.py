@@ -143,10 +143,14 @@ class PaymentHistoryService:
             sender_account.payment_history = []
         if getattr(recipient_account, 'payment_history', None) is None:
             recipient_account.payment_history = []
+        # Use reassignment instead of in-place append so SQLAlchemy detects changes
+        sender_list = list(sender_account.payment_history or [])
+        recipient_list = list(recipient_account.payment_history or [])
+        sender_list.append(sender_history)
+        recipient_list.append(recipient_history)
 
-        # Append and commit
-        sender_account.payment_history.append(sender_history)
-        recipient_account.payment_history.append(recipient_history)
+        sender_account.payment_history = sender_list
+        recipient_account.payment_history = recipient_list
 
         db.add(sender_account)
         db.add(recipient_account)
