@@ -37,9 +37,15 @@ except Exception as e:
     sys.exit(3)
 
 with db_engine.connect() as conn:
+    # Don't truncate alembic_version - keep migration metadata so Alembic knows which
+    # migrations have already been applied. Truncating this table causes Alembic to
+    # attempt to re-run all migrations against an existing schema.
     sql = text(r"""
     DO $$ DECLARE r RECORD; BEGIN
-      FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname='public') LOOP
+      FOR r IN (
+          SELECT tablename FROM pg_tables
+           WHERE schemaname='public' AND tablename <> 'alembic_version'
+      ) LOOP
         EXECUTE format('TRUNCATE TABLE public.%I RESTART IDENTITY CASCADE', r.tablename);
       END LOOP;
     END $$;
