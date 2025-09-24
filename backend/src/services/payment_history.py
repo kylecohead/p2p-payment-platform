@@ -24,7 +24,8 @@ class PaymentHistoryService:
         db: Session,
         transaction: Transaction,
         description: str,
-        perspective_account_id: int
+        perspective_account_id: int,
+        transaction_code: str | None = None,
     ) -> Dict[str, Any]:
         """
         Create payment history data for a specific account's perspective.
@@ -80,8 +81,13 @@ class PaymentHistoryService:
         # Determine the other party's name
         other_party_name = recipient_user.name if not is_credit else sender_user.name
         
-        # Generate unique transaction code for display
-        transaction_code = PaymentReferenceService.generate_transaction_code(db)
+        # Use provided transaction_code if given, otherwise generate one.
+        # Generating inside this function without sharing would advance the
+        # transactions sequence per-perspective resulting in two different
+        # display codes for the same logical transfer. Prefer passing a
+        # single code from the caller when creating both perspectives.
+        if transaction_code is None:
+            transaction_code = PaymentReferenceService.generate_transaction_code(db)
         
         # Create the payment history data
         payment_history = {
@@ -118,14 +124,17 @@ class PaymentHistoryService:
             transaction: The transaction to update
             description: Description of the payment
         """
+        # Generate a single transaction code and use it for both perspectives
+        shared_code = PaymentReferenceService.generate_transaction_code(db)
+
         # Generate sender's perspective (debit)
         sender_history = PaymentHistoryService.create_payment_history_data(
-            db, transaction, description, transaction.sender_id
+            db, transaction, description, transaction.sender_id, shared_code
         )
         
         # Generate recipient's perspective (credit)
         recipient_history = PaymentHistoryService.create_payment_history_data(
-            db, transaction, description, transaction.recipient_id
+            db, transaction, description, transaction.recipient_id, shared_code
         )
         
         # Store both perspectives on the corresponding accounts' payment_history arrays

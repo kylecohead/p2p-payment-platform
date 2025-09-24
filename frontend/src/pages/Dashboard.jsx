@@ -68,11 +68,27 @@ export default function Dashboard() {
     };
     window.addEventListener("focus", onVis);
     document.addEventListener("visibilitychange", onVis);
+    // Listen for account updates (fired after send/topup/getClient)
+    const onAccountUpdated = (ev) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
+        if (!parsed || !parsed.id) return;
+        const updatedClientId = ev?.detail?.clientId;
+        // If event doesn't include clientId, always reload; otherwise only reload for matching id
+        if (!updatedClientId || Number(updatedClientId) === Number(parsed.id)) {
+          loadClientAndPayments();
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener('account:updated', onAccountUpdated);
 
     return () => {
       aborted = true;
       window.removeEventListener("focus", onVis);
       document.removeEventListener("visibilitychange", onVis);
+  window.removeEventListener('account:updated', onAccountUpdated);
     };
   }, [navigate]);
 

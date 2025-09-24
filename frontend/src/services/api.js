@@ -36,6 +36,12 @@ class ApiService {
       const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
       localStorage.setItem('currentUser', JSON.stringify({ ...stored, ...data }));
     } catch (e) {}
+    // Notify listeners that the account data has been updated
+    try {
+      window.dispatchEvent(new CustomEvent('account:updated', { detail: { clientId, data } }));
+    } catch (e) {
+      // ignore if CustomEvent or window is not available in some tests
+    }
     return data;
   }
 
@@ -74,7 +80,19 @@ class ApiService {
       const error = await response.json();
       throw new Error(error.detail || 'Top-up failed');
     }
-    return response.json();
+    const data = await response.json();
+    // Refresh payment history for client so UI shows the latest entries immediately
+    try {
+      const hist = await this.getPaymentHistory(clientId, 100);
+      const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      localStorage.setItem('currentUser', JSON.stringify({ ...stored, ...data, recent_payment_history: hist.payment_history }));
+      try {
+        window.dispatchEvent(new CustomEvent('account:updated', { detail: { clientId, data: { ...stored, ...data, recent_payment_history: hist.payment_history } } }));
+      } catch (e) {}
+    } catch (e) {
+      // ignore history refresh errors
+    }
+    return data;
   }
 
   // Send money method
@@ -100,7 +118,19 @@ class ApiService {
       const error = await response.json();
       throw new Error(error.detail || 'Send money failed');
     }
-    return response.json();
+    const data = await response.json();
+    // Refresh payment history for client so UI shows the latest entries immediately
+    try {
+      const hist = await this.getPaymentHistory(clientId, 100);
+      const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      localStorage.setItem('currentUser', JSON.stringify({ ...stored, ...data, recent_payment_history: hist.payment_history }));
+      try {
+        window.dispatchEvent(new CustomEvent('account:updated', { detail: { clientId, data: { ...stored, ...data, recent_payment_history: hist.payment_history } } }));
+      } catch (e) {}
+    } catch (e) {
+      // ignore history refresh errors
+    }
+    return data;
   }
 
   // Get payment history
