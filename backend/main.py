@@ -261,7 +261,7 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Sender or recipient account not found")
 
         # Evaluate rules against the locked snapshot
-        allowed, alerts, violations = RuleEngine.evaluate(
+        allowed, alerts = RuleEngine.evaluate(
             db, sender=sender, recipient=recipient, amount=amount
         )
 
@@ -270,8 +270,7 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             db.rollback()                       # release row locks
             for a in alerts:
                 db.add(a)
-            db.commit()  
-            violations_str = json.dumps(violations, default=str)                       # persist alerts even for blocked attempts
+            db.commit()                       # persist alerts even for blocked attempts
             raise HTTPException(status_code=409, detail={"GG you are cooked"})
 
         # Allowed: move funds + create transaction atomically under the same lock
