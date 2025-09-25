@@ -15,9 +15,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
-  // no polling; we'll fetch once on mount / on focus
   const [panelOpen, setPanelOpen] = useState(false);
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
+  
+  // Polling for balance updates
+  const POLLING_INTERVAL = 5000; // 5 seconds
 
   // Closes the popup and navigates to /dashboard
   function onTopupPopupClose() {
@@ -70,6 +72,19 @@ export default function Dashboard() {
     (async () => {
       await loadClientAndPayments();
     })();
+
+    // Set up polling for balance updates
+    const pollingInterval = setInterval(async () => {
+      if (aborted) return;
+      try {
+        const fresh = await ApiService.getClient(parsed.id);
+        setBalance(Number(fresh.balance) || 0);
+        // Update user state with fresh balance
+        setUser((u) => ({ ...(u || {}), balance: Number(fresh.balance) || 0 }));
+      } catch (e) {
+        console.error("Polling balance update failed", e);
+      }
+    }, POLLING_INTERVAL);
 
     const onVis = () => {
       loadClientAndPayments();
@@ -129,10 +144,11 @@ export default function Dashboard() {
 
     return () => {
       aborted = true;
-  window.removeEventListener("focus", onVis);
-  document.removeEventListener("visibilitychange", onVis);
-  window.removeEventListener('account:updated', onAccountUpdated);
-  window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
+      clearInterval(pollingInterval);
+      window.removeEventListener("focus", onVis);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener('account:updated', onAccountUpdated);
+      window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
     };
   }, [navigate]);
 
