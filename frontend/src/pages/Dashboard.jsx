@@ -19,7 +19,7 @@ export default function Dashboard() {
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
   
   // Polling for balance updates
-  const POLLING_INTERVAL = 5000; // 5 seconds
+  const POLLING_INTERVAL = 2500; // 5 seconds
 
   // Closes the popup and navigates to /dashboard
   function onTopupPopupClose() {
