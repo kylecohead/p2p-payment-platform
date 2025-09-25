@@ -73,16 +73,34 @@ export default function Dashboard() {
       await loadClientAndPayments();
     })();
 
-    // Set up polling for balance updates
+    // Set up polling for balance and payment history updates
     const pollingInterval = setInterval(async () => {
       if (aborted) return;
       try {
+        // Fetch fresh client data including balance
         const fresh = await ApiService.getClient(parsed.id);
         setBalance(Number(fresh.balance) || 0);
-        // Update user state with fresh balance
-        setUser((u) => ({ ...(u || {}), balance: Number(fresh.balance) || 0 }));
+        setUser((u) => ({ ...(u || {}), ...fresh }));
+        
+        // Update localStorage with fresh data
+        try {
+          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
+        } catch (e) {}
+        
+        // Fetch updated payment history
+        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
+        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
+        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+        
+        // Update localStorage with fresh payment history
+        try {
+          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+        } catch (e) {}
+        
       } catch (e) {
-        console.error("Polling balance update failed", e);
+        console.error("Polling update failed", e);
       }
     }, POLLING_INTERVAL);
 
