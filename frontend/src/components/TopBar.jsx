@@ -35,7 +35,11 @@ export default function TopBar({ user, theme, onThemeToggle }) {
             aria-label="Toggle theme"
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
-            <div className={`theme-toggle-switch ${theme === "dark" ? "active" : ""}`}>
+            <div
+              className={`theme-toggle-switch ${
+                theme === "dark" ? "active" : ""
+              }`}
+            >
               <div className="theme-toggle-slider"></div>
             </div>
           </button>
