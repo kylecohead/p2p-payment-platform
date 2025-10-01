@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import SendPanel from "../components/SendPanel";
-import Popup from '../components/Popup';
+import Popup from "../components/Popup";
 import "./Payments.css";
 import ApiService from "../services/api";
 
@@ -47,11 +47,6 @@ export default function Payments() {
     setPanelOpen(true);
   };
 
-  const handleExport = () => {
-    // TODO: Backend export functionality
-    alert("Export functionality coming soon");
-  };
-
   // Calculate totals
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const credits = payments.filter((p) => p.type === "Credit");
@@ -61,16 +56,18 @@ export default function Payments() {
 
   return (
     <div className="payments-page">
-
       {/* Send success popup */}
-      <Popup blackText="Payment " greenText="successful!" showPopup={sendPopupOpen} setShowPopup={setSendPopupOpen} onClose={onSendPopupClose} />
+      <Popup
+        blackText="Payment "
+        greenText="successful!"
+        showPopup={sendPopupOpen}
+        setShowPopup={setSendPopupOpen}
+        onClose={onSendPopupClose}
+      />
 
       <div className="page-header-with-actions">
         <h1 className="page-title">Payments</h1>
         <div className="page-actions">
-          <button className="btn btn-outline" onClick={handleExport}>
-            Export
-          </button>
           <button className="btn" onClick={handleNewPayment}>
             + New payment
           </button>
