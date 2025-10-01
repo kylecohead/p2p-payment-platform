@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import TopupPanel from "../components/TopupPanel";
-import Popup from '../components/Popup';
+import Popup from "../components/Popup";
+import SparkleOverlay from "../components/SparkleOverlay";
 import "./Dashboard.css";
 import ApiService from "../services/api";
 
@@ -17,7 +18,7 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
-  
+
   // Polling for balance updates
   const POLLING_INTERVAL = 2500; // 5 seconds
 
@@ -48,8 +49,13 @@ export default function Dashboard() {
         setBalance(Number(fresh.balance) || 0);
         setUser((u) => ({ ...(u || {}), ...fresh }));
         try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
+          const stored = JSON.parse(
+            localStorage.getItem("currentUser") || "{}"
+          );
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({ ...stored, ...fresh })
+          );
         } catch (e) {}
       } catch (e) {
         console.error("Initial client load failed", e);
@@ -57,11 +63,23 @@ export default function Dashboard() {
 
       try {
         const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+        const payment_history =
+          hist && hist.payment_history ? hist.payment_history : [];
+        setUser((u) => ({
+          ...(u || {}),
+          recent_payment_history: payment_history,
+        }));
         try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+          const stored2 = JSON.parse(
+            localStorage.getItem("currentUser") || "{}"
+          );
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({
+              ...stored2,
+              recent_payment_history: payment_history,
+            })
+          );
         } catch (e) {}
       } catch (e) {
         console.error("Payment history load failed", e);
@@ -81,24 +99,40 @@ export default function Dashboard() {
         const fresh = await ApiService.getClient(parsed.id);
         setBalance(Number(fresh.balance) || 0);
         setUser((u) => ({ ...(u || {}), ...fresh }));
-        
+
         // Update localStorage with fresh data
         try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
+          const stored = JSON.parse(
+            localStorage.getItem("currentUser") || "{}"
+          );
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({ ...stored, ...fresh })
+          );
         } catch (e) {}
-        
+
         // Fetch updated payment history
         const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-        
+        const payment_history =
+          hist && hist.payment_history ? hist.payment_history : [];
+        setUser((u) => ({
+          ...(u || {}),
+          recent_payment_history: payment_history,
+        }));
+
         // Update localStorage with fresh payment history
         try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+          const stored2 = JSON.parse(
+            localStorage.getItem("currentUser") || "{}"
+          );
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({
+              ...stored2,
+              recent_payment_history: payment_history,
+            })
+          );
         } catch (e) {}
-        
       } catch (e) {
         console.error("Polling update failed", e);
       }
@@ -116,16 +150,28 @@ export default function Dashboard() {
         if (!parsed || !parsed.id) return;
         const updatedClientId = ev?.detail?.clientId;
         // If event doesn't include clientId, always proceed; otherwise only proceed for matching id
-        if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
+        if (updatedClientId && Number(updatedClientId) !== Number(parsed.id))
+          return;
 
         // If the event payload includes recent_payment_history or new_balance, apply it immediately
         const payloadData = ev?.detail?.data;
         if (payloadData) {
           if (payloadData.recent_payment_history) {
-            setUser((u) => ({ ...(u || {}), recent_payment_history: payloadData.recent_payment_history }));
+            setUser((u) => ({
+              ...(u || {}),
+              recent_payment_history: payloadData.recent_payment_history,
+            }));
             try {
-              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payloadData.recent_payment_history }));
+              const stored2 = JSON.parse(
+                localStorage.getItem("currentUser") || "{}"
+              );
+              localStorage.setItem(
+                "currentUser",
+                JSON.stringify({
+                  ...stored2,
+                  recent_payment_history: payloadData.recent_payment_history,
+                })
+              );
             } catch (e) {}
           }
           if (payloadData.new_balance !== undefined) {
@@ -139,34 +185,49 @@ export default function Dashboard() {
         // ignore
       }
     };
-    window.addEventListener('account:updated', onAccountUpdated);
-      const onPaymentHistoryUpdated = (ev) => {
-        try {
-          const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          if (!parsed || !parsed.id) return;
-          const updatedClientId = ev?.detail?.clientId;
-          if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
-          const payment_history = ev?.detail?.payment_history;
-          if (payment_history) {
-            setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-            try {
-              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-            } catch (e) {}
-          }
-        } catch (e) {
-          // ignore
+    window.addEventListener("account:updated", onAccountUpdated);
+    const onPaymentHistoryUpdated = (ev) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
+        if (!parsed || !parsed.id) return;
+        const updatedClientId = ev?.detail?.clientId;
+        if (updatedClientId && Number(updatedClientId) !== Number(parsed.id))
+          return;
+        const payment_history = ev?.detail?.payment_history;
+        if (payment_history) {
+          setUser((u) => ({
+            ...(u || {}),
+            recent_payment_history: payment_history,
+          }));
+          try {
+            const stored2 = JSON.parse(
+              localStorage.getItem("currentUser") || "{}"
+            );
+            localStorage.setItem(
+              "currentUser",
+              JSON.stringify({
+                ...stored2,
+                recent_payment_history: payment_history,
+              })
+            );
+          } catch (e) {}
         }
-      };
-      window.addEventListener('payment-history:updated', onPaymentHistoryUpdated);
+      } catch (e) {
+        // ignore
+      }
+    };
+    window.addEventListener("payment-history:updated", onPaymentHistoryUpdated);
 
     return () => {
       aborted = true;
       clearInterval(pollingInterval);
       window.removeEventListener("focus", onVis);
       document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener('account:updated', onAccountUpdated);
-      window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
+      window.removeEventListener("account:updated", onAccountUpdated);
+      window.removeEventListener(
+        "payment-history:updated",
+        onPaymentHistoryUpdated
+      );
     };
   }, [navigate]);
 
@@ -176,14 +237,26 @@ export default function Dashboard() {
   const paymentsToday = recentPayments.filter((p) => p.date === today);
   const creditsToday = paymentsToday.filter((p) => p.type === "Credit");
   const debitsToday = paymentsToday.filter((p) => p.type === "Debit");
-  const totalCreditsToday = creditsToday.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-  const totalDebitsToday = debitsToday.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const totalCreditsToday = creditsToday.reduce(
+    (sum, p) => sum + Number(p.amount || 0),
+    0
+  );
+  const totalDebitsToday = debitsToday.reduce(
+    (sum, p) => sum + Number(p.amount || 0),
+    0
+  );
 
   return (
     <div className="dashboard">
-
       {/* Topup success popup */}
-      <Popup blackText="Top up " greenText="successful!" showPopup={topupPopupOpen} setShowPopup={setTopupPopupOpen} onClose={onTopupPopupClose} />
+      <SparkleOverlay show={topupPopupOpen} />
+      <Popup
+        blackText="Top up "
+        greenText="successful!"
+        showPopup={topupPopupOpen}
+        setShowPopup={setTopupPopupOpen}
+        onClose={onTopupPopupClose}
+      />
 
       <div className="page-header-with-actions">
         <h1 className="page-title">Dashboard</h1>
@@ -258,7 +331,11 @@ export default function Dashboard() {
                   <td>{p.time}</td>
                   <td>{p.name}</td>
                   <td>{p.description}</td>
-                  <td className={`amount-col ${p.type === "Credit" ? "positive" : "negative"}`}>
+                  <td
+                    className={`amount-col ${
+                      p.type === "Credit" ? "positive" : "negative"
+                    }`}
+                  >
                     R{Number(p.amount).toFixed(2)}
                   </td>
                 </tr>

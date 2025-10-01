@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import SendPanel from "../components/SendPanel";
 import Popup from "../components/Popup";
+import SparkleOverlay from "../components/SparkleOverlay";
 import "./Payments.css";
 import ApiService from "../services/api";
 
@@ -57,6 +58,7 @@ export default function Payments() {
   return (
     <div className="payments-page">
       {/* Send success popup */}
+      <SparkleOverlay show={sendPopupOpen} />
       <Popup
         blackText="Payment "
         greenText="successful!"
