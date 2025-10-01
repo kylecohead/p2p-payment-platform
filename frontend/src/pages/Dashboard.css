@@ -1,72 +1,121 @@
-/* Dashboard-specific card layout */
+/* Spotify-inspired Dashboard Layout */
 .dashboard-cards {
   max-width: 1200px;
-  margin: 0 auto 2rem auto;
+  margin: 0 auto 3rem auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
 }
 
-/* Full-width balance card */
-.balance-card-full {
+/* Modern card base - Spotify style with subtle shadow */
+.modern-card {
   background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  border-left: 4px solid var(--primary);
-  text-align: center;
-  transition: background-color var(--transition-speed) ease,
-    border-color var(--transition-speed) ease;
+  border-radius: 16px;
+  padding: 1.75rem;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="dark"] .modern-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Balance card - spans all 3 columns */
+.balance-card-full {
+  grid-column: 1 / -1;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
+  border-radius: 20px;
+  padding: 2.5rem;
+  text-align: left;
+  border: none;
+  box-shadow: 0 4px 20px rgba(68, 173, 114, 0.25);
 }
 
 .balance-card-full .card-label {
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .balance-card-full .card-value {
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
 }
 
-/* Cash flow cards grid */
+/* Cash flow cards grid - replaces old grid */
 .cash-flow-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  display: contents;
 }
 
 .cash-flow-card {
   background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border-left: 4px solid var(--success);
-  transition: background-color var(--transition-speed) ease,
-    border-color var(--transition-speed) ease;
+  border-radius: 16px;
+  padding: 1.75rem;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+/* Glass effect for light mode */
+html[data-theme="light"] .cash-flow-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+html[data-theme="dark"] .cash-flow-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Accent bar on left - thicker */
+.cash-flow-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--success);
+  border-radius: 16px 0 0 16px;
+}
+
+.cash-flow-card.debit-card::before {
+  background: var(--error);
 }
 
 .cash-flow-card .card-label {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   margin-bottom: 0.75rem;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .cash-flow-card .card-value {
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: 2rem;
+  font-weight: 700;
   color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
 
-/* Card color overrides */
-.inflow-card {
-  border-left-color: var(--success);
-}
-
-.outflow-card {
-  border-left-color: var(--error);
+.cash-flow-card .card-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* Value color styles */
@@ -78,21 +127,88 @@
   color: var(--error);
 }
 
-/* Legacy styles for existing elements */
-
-.empty-state {
-  text-align: center;
-  font-style: italic;
-  padding: 3rem !important;
+/* Net card styling */
+.cash-flow-card.net-card::before {
+  background: linear-gradient(180deg, var(--success) 0%, var(--primary) 100%);
 }
+
+/* Today's transactions section */
+.today-payments {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.today-payments h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.today-payments .empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 3rem;
+  font-style: italic;
+  background: var(--surface-raised);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.payments-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface-raised);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="dark"] .payments-table {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.payments-table thead th {
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.payments-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.payments-table tbody tr:hover {
+  background: var(--surface);
+}
+
 .payments-table td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--gray-200);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
 }
 
-.empty-state {
-  text-align: center;
-  color: var(--gray-700);
-  font-style: italic;
-  padding: 3rem !important;
+.payments-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.payments-table .amount-col {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.payments-table .amount-col.positive {
+  color: var(--success);
+}
+
+.payments-table .amount-col.negative {
+  color: var(--error);
 }

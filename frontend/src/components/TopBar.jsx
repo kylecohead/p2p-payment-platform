@@ -27,24 +27,6 @@ export default function TopBar({ user, theme, onThemeToggle }) {
       </div>
       <div className="topbar-right">
         {user && <span className="user-name">{user.name}</span>}
-        <div className="theme-toggle-container">
-          <span className="theme-label">Light</span>
-          <button
-            className="theme-toggle-btn"
-            onClick={onThemeToggle}
-            aria-label="Toggle theme"
-            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-          >
-            <div
-              className={`theme-toggle-switch ${
-                theme === "dark" ? "active" : ""
-              }`}
-            >
-              <div className="theme-toggle-slider"></div>
-            </div>
-          </button>
-          <span className="theme-label">Dark</span>
-        </div>
         {user ? (
           <button className="btn" onClick={handleLogout}>
             Logout

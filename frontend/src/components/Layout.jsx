@@ -36,8 +36,8 @@ export default function Layout() {
 
   return (
     <div className="container">
-      <SideNav />
-      <TopBar user={user} theme={theme} onThemeToggle={toggleTheme} />
+      <SideNav theme={theme} onThemeToggle={toggleTheme} />
+      <TopBar user={user} />
       <main className="content">
         <Outlet />
       </main>
