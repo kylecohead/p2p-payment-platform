@@ -10,11 +10,40 @@
   --success: #4dd36c;
   --warning: #e2c366;
   --error: #d75562;
-  --white: #ffffff;
   --black: #000000;
-  --gray-200: #dee2e6;
-  --gray-700: #495057;
-  --gray-900: #212529;
+  --white: #ffffff;
+
+  --background: #f5f7fa;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #dee2e6;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --text-inverse: #ffffff;
+  --overlay: rgba(15, 23, 42, 0.45);
+  --transition-speed: 200ms;
+
+  /* legacy aliases */
+  --gray-200: var(--border);
+  --gray-700: var(--text-secondary);
+  --gray-900: var(--text-primary);
+}
+
+html[data-theme="dark"] {
+  --background: #1a1a1a;
+  --surface: #252525;
+  --surface-raised: #2d2d2d;
+  --border: #404040;
+  --text-primary: #ffffff;
+  --text-secondary: #d0d0d0;
+  --text-inverse: #1a1a1a;
+  --overlay: rgba(0, 0, 0, 0.7);
+  --primary: #52c97f;
+  --primary-dark: #3fa865;
+  --primary-fade: rgba(82, 201, 127, 0.2);
+  --success: #5ce87d;
+  --warning: #f0d675;
+  --error: #e66b78;
 }
 
 /* Reset & Base */
@@ -24,18 +53,36 @@
   padding: 0;
 }
 
+/* Remove focus outline on click, keep for keyboard navigation */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 body {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--white);
-  color: var(--gray-700);
+  background-color: var(--background);
+  color: var(--text-secondary);
   line-height: 1.5;
+  transition: background-color var(--transition-speed) ease,
+    color var(--transition-speed) ease;
 }
 
 /* Typography */
 h1,
 h2,
 h3 {
-  color: var(--gray-900);
+  color: var(--text-primary);
   font-weight: 600;
   margin-bottom: 1rem;
 }
@@ -84,6 +131,15 @@ h3 {
   background: var(--primary-dark);
 }
 
+.btn:focus {
+  outline: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 /* Button variants */
 .btn.btn-outline {
   background: transparent;
@@ -99,30 +155,98 @@ h3 {
 /* Icon/ghost button - for close icons etc. */
 .btn-icon {
   background: transparent;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   border: none;
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
+  transition: background-color var(--transition-speed) ease,
+    color var(--transition-speed) ease;
 }
 .btn-icon:hover {
-  background: var(--gray-200);
-  color: var(--gray-900);
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+/* Modern theme toggle switch */
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
+}
+
+.theme-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+.theme-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle-btn:focus {
+  outline: none;
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.theme-toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 22px;
+  background: var(--border);
+  border-radius: 11px;
+  transition: background-color 250ms ease;
+}
+
+.theme-toggle-switch.active {
+  background: var(--primary);
+}
+
+.theme-toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 250ms ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-switch.active .theme-toggle-slider {
+  transform: translateX(22px);
 }
 
 /* Cards */
 .card {
-  background: var(--white);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-/* Base card styles */
-.card {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease,
+    color var(--transition-speed) ease;
 }
 
 /* Grid layouts for cards */
@@ -138,8 +262,8 @@ h3 {
 
 /* Stat cards for metrics/data display */
 .stat-card {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
   border-left: 4px solid var(--primary);
@@ -150,7 +274,7 @@ h3 {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
 }
 
@@ -164,13 +288,13 @@ h3 {
 .stat-card .card-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--gray-900);
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 
 .stat-card .card-subtitle {
   font-size: 0.75rem;
-  color: var(--gray-700);
+  color: var(--text-secondary);
 }
 
 /* Forms */
@@ -179,16 +303,19 @@ textarea,
 select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
-  background: var(--white);
-  color: var(--gray-900);
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease,
+    color var(--transition-speed) ease;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--gray-700);
+  color: var(--text-secondary);
   opacity: 0.7;
 }
 
@@ -197,8 +324,8 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px var(--white) inset !important;
-  -webkit-text-fill-color: var(--gray-900) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--surface) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
 }
 
 input:focus,
@@ -219,7 +346,8 @@ select:focus {
   color: var(--error);
 }
 .text-muted {
-  color: var(--gray-700);
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 /* Utilities */
@@ -289,14 +417,17 @@ select:focus {
     "sidePanel content";
   min-height: 100vh;
   min-width: 100vw;
-  background: var(--white);
+  background: var(--background);
+  transition: background-color var(--transition-speed) ease;
 }
 
 .sidePanel {
   grid-area: sidePanel;
-  background: var(--white);
-  border-right: 1px solid var(--gray-200);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   padding: 1rem;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .sidePanel ul {
@@ -313,14 +444,14 @@ select:focus {
   padding: 1rem 1rem;
   border-radius: 12px;
   text-decoration: none;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 1rem;
   transition: all 0.2s;
   min-height: 60px;
 }
 .nav-link:hover {
-  background: var(--gray-200);
+  background: var(--border);
   color: var(--primary);
 }
 
@@ -330,14 +461,20 @@ select:focus {
   font-weight: 600;
 }
 
+html[data-theme="dark"] .nav-link.active {
+  color: #5ce87d;
+}
+
 .topBar {
   grid-area: topBar;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--gray-200);
-  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
   padding: 1rem;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .logo {
@@ -357,15 +494,16 @@ select:focus {
 
 .content {
   grid-area: content;
-  background: var(--white);
+  background: var(--surface);
   padding: 1rem;
+  transition: background-color var(--transition-speed) ease;
 }
 
 /* Side Panel (overlay + drawer) */
 .sp-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay);
   z-index: 999;
 }
 
@@ -375,7 +513,7 @@ select:focus {
   height: 100vh;
   width: 420px;
   max-width: 90vw;
-  background: var(--white);
+  background: var(--surface);
   z-index: 1000;
   display: flex;
   flex-direction: column;

@@ -81,7 +81,10 @@ export default function Payments() {
           Loading payment history...
         </div>
       ) : error ? (
-        <div style={{ textAlign: "center", padding: "2rem", color: "red" }}>
+        <div
+          className="text-danger"
+          style={{ textAlign: "center", padding: "2rem" }}
+        >
           {error}
         </div>
       ) : (
@@ -109,7 +112,8 @@ export default function Payments() {
           <div className="payments-table-container">
             {payments.length === 0 ? (
               <div
-                style={{ textAlign: "center", padding: "3rem", color: "#666" }}
+                className="text-center text-muted"
+                style={{ padding: "3rem" }}
               >
                 No payment history yet. Make your first payment to see it here!
               </div>
@@ -136,10 +140,9 @@ export default function Payments() {
                       <td>{p.date}</td>
                       <td>{p.name}</td>
                       <td
-                        style={{
-                          color: p.amount < 0 ? "red" : "green",
-                          fontWeight: "bold",
-                        }}
+                        className={`font-bold ${
+                          p.amount < 0 ? "text-danger" : "text-success"
+                        }`}
                       >
                         {p.amount < 0 ? "-" : ""}R
                         {Math.abs(p.amount).toFixed(2)}

@@ -6,8 +6,8 @@
   color: var(--gray-700);
 }
 
-.btn-outline:hover { 
-  background: var(--gray-200); 
+.btn-outline:hover {
+  background: var(--gray-200);
 }
 
 /* Color overrides for payment cards - base style in global.css */
@@ -20,8 +20,8 @@
 }
 
 /* Table placeholder spacing */
-.payments-table-container { 
-  margin-top: 1rem; 
+.payments-table-container {
+  margin-top: 1rem;
 }
 
 .payments-section {
@@ -29,10 +29,12 @@
 }
 
 .payments-table-container {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .payments-table {
@@ -41,12 +43,15 @@
 }
 
 .payments-table th {
-  background: var(--gray-200);
+  background: var(--surface);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
   font-size: 0.8rem;
-  border-bottom: 1px solid var(--gray-200);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .payments-table td {

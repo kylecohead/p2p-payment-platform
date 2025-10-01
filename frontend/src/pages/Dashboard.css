@@ -6,26 +6,28 @@
 
 /* Full-width balance card */
 .balance-card-full {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 1.5rem;
   border-left: 4px solid var(--primary);
   text-align: center;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .balance-card-full .card-label {
   font-size: 1rem;
   margin-bottom: 0.75rem;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .balance-card-full .card-value {
   font-size: 3rem;
   font-weight: 700;
-  color: var(--gray-900);
+  color: var(--text-primary);
 }
 
 /* Cash flow cards grid */
@@ -36,24 +38,26 @@
 }
 
 .cash-flow-card {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   border-left: 4px solid var(--success);
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .cash-flow-card .card-label {
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .cash-flow-card .card-value {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--gray-900);
+  color: var(--text-primary);
 }
 
 /* Card color overrides */
