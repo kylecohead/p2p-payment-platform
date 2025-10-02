@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function TopBar({ user }) {
+export default function TopBar({ user, theme, onThemeToggle }) {
   const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem("currentUser");

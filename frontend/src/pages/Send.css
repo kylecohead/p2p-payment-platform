@@ -2,8 +2,9 @@
   max-width: 300px;
   margin: 2rem auto;
   padding: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 8px;
+  background: var(--surface);
 }
 .send-container h2 {
   margin-bottom: 1rem;
@@ -20,8 +21,9 @@
   padding: 6px;
   margin-top: 4px;
   box-sizing: border-box;
-  color: var(--gray-900);
-  background-color: var(--white);
+  color: var(--text-primary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
 }
 .send-form button {
   margin-right: 8px;

@@ -1,5 +1,5 @@
 .landing-page-container {
-    display: grid;
+  display: grid;
   grid-template-rows: 60px 1fr 60px;
   grid-template-areas:
     "topBar"
@@ -7,39 +7,40 @@
     "footer";
   min-height: 100vh;
   min-width: 100vw;
-  background: var(--white);
+  background: var(--background);
+  transition: background-color var(--transition-speed) ease;
 }
 
 .landing-page-content {
-  grid-area: content; 
-  background: var(--white);
+  grid-area: content;
+  background: var(--background);
   padding: 1rem;
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background-color var(--transition-speed) ease;
 }
 
 .landing-page-footer {
-    grid-area: footer;
-    background: var(--light-gray);
-    border-top: 1px solid var(--gray-200);
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    font-size: small;
+  grid-area: footer;
+  background: var(--light-gray);
+  border-top: 1px solid var(--gray-200);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  font-size: small;
 }
 
 .information-box {
-    display: flex;
-    flex-direction: row;
-    position: relative;
-    gap: 2rem;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  gap: 2rem;
 }
 
 .text-section {
-    padding: 1rem;
-    
+  padding: 1rem;
 }
 
 .text-section h1 {
@@ -51,26 +52,26 @@
 }
 
 .image-section {
-    padding: 1rem;
-    align-self: center;
+  padding: 1rem;
+  align-self: center;
 }
 
 .p2p-image {
-    width: 300px;
+  width: 300px;
 }
 
 .shadow-shape-left {
-    position: absolute;
-    bottom: 60px;
-    left: 0px;
-    height: 100px;
-    width: 190px;
+  position: absolute;
+  bottom: 60px;
+  left: 0px;
+  height: 100px;
+  width: 190px;
 }
 
 .shadow-shape-right {
-    position: absolute;
-    top: 60px;
-    right: 0px;
-    height: 100px;
-    width: 190px;
+  position: absolute;
+  top: 60px;
+  right: 0px;
+  height: 100px;
+  width: 190px;
 }
