@@ -1,5 +1,5 @@
 .landing-page-container {
-    display: grid;
+  display: grid;
   grid-template-rows: 60px 1fr 60px;
   grid-template-areas:
     "topBar"
@@ -7,70 +7,178 @@
     "footer";
   min-height: 100vh;
   min-width: 100vw;
-  background: var(--white);
+  background: var(--background);
+  transition: background-color var(--transition-speed) ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .landing-page-content {
-  grid-area: content; 
-  background: var(--white);
-  padding: 1rem;
+  grid-area: content;
+  background: var(--background);
+  padding: 3rem 2rem;
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background-color var(--transition-speed) ease;
+  position: relative;
 }
 
 .landing-page-footer {
-    grid-area: footer;
-    background: var(--light-gray);
-    border-top: 1px solid var(--gray-200);
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    font-size: small;
+  grid-area: footer;
+  background: var(--light-gray);
+  border-top: 1px solid var(--gray-200);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  font-size: small;
 }
 
 .information-box {
-    display: flex;
-    flex-direction: row;
-    position: relative;
-    gap: 2rem;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  gap: 4rem;
+  max-width: 1200px;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .text-section {
-    padding: 1rem;
-    
+  padding: 2rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  animation: slideInLeft 0.8s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .text-section h1 {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 3.5rem;
+  font-weight: 900;
+  line-height: 1.1;
+  background: linear-gradient(
+    135deg,
+    var(--text-primary) 0%,
+    var(--primary) 50%,
+    var(--primary-dark) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.03em;
 }
 
 .text-section p {
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 500px;
 }
 
-.image-section {
-    padding: 1rem;
-    align-self: center;
+.text-section .btn {
+  align-self: flex-start;
+  font-size: 1.1rem;
+  padding: 1rem 2.5rem;
+  box-shadow: 0 4px 16px rgba(68, 173, 114, 0.3);
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.p2p-image {
-    width: 300px;
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 16px rgba(68, 173, 114, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 24px rgba(68, 173, 114, 0.5);
+  }
+}
+
+.network-section {
+  padding: 2rem;
+  align-self: center;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: slideInRight 0.8s ease-out;
+  min-height: 450px;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .shadow-shape-left {
-    position: absolute;
-    bottom: 60px;
-    left: 0px;
-    height: 100px;
-    width: 190px;
+  position: absolute;
+  bottom: 60px;
+  left: 0px;
+  height: 150px;
+  width: 250px;
+  opacity: 0.7;
+  animation: floatLeft 6s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes floatLeft {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(-10px, -15px) rotate(-5deg);
+  }
 }
 
 .shadow-shape-right {
-    position: absolute;
-    top: 60px;
-    right: 0px;
-    height: 100px;
-    width: 190px;
+  position: absolute;
+  top: 60px;
+  right: 0px;
+  height: 150px;
+  width: 250px;
+  opacity: 0.7;
+  animation: floatRight 6s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes floatRight {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(10px, 15px) rotate(5deg);
+  }
 }

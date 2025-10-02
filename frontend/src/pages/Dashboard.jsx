@@ -267,33 +267,46 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h2 style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-        Today's Overview
-      </h2>
-
       <div className="dashboard-cards">
-        {/* Balance card - full width */}
+        {/* Balance card - spans full width */}
         <div className="balance-card-full">
           <div className="card-label">Current Balance</div>
           <div className="card-value">R{Number(balance).toFixed(2)}</div>
         </div>
 
-        {/* Credits and Debits today cards - side by side */}
-        <div className="cash-flow-grid">
-          <div className="cash-flow-card credit-card">
-            <div className="card-label">Credits today</div>
-            <div className="card-value positive">
-              R{totalCreditsToday.toFixed(2)}
-            </div>
-            <div className="card-subtitle">{creditsToday.length} credits</div>
+        {/* Credits and Debits cards - grid items */}
+        <div className="cash-flow-card credit-card">
+          <div className="card-label">Money In</div>
+          <div className="card-value positive">
+            +R{totalCreditsToday.toFixed(2)}
           </div>
-          <div className="cash-flow-card debit-card">
-            <div className="card-label">Debits today</div>
-            <div className="card-value negative">
-              R{Math.abs(totalDebitsToday).toFixed(2)}
-            </div>
-            <div className="card-subtitle">{debitsToday.length} debits</div>
+          <div className="card-subtitle">
+            {creditsToday.length} transactions
           </div>
+        </div>
+
+        <div className="cash-flow-card debit-card">
+          <div className="card-label">Money Out</div>
+          <div className="card-value negative">
+            -R{Math.abs(totalDebitsToday).toFixed(2)}
+          </div>
+          <div className="card-subtitle">{debitsToday.length} transactions</div>
+        </div>
+
+        {/* Net flow card */}
+        <div className="cash-flow-card net-card">
+          <div className="card-label">Net Today</div>
+          <div
+            className={`card-value ${
+              totalCreditsToday - Math.abs(totalDebitsToday) >= 0
+                ? "positive"
+                : "negative"
+            }`}
+          >
+            {totalCreditsToday - Math.abs(totalDebitsToday) >= 0 ? "+" : ""}R
+            {(totalCreditsToday - Math.abs(totalDebitsToday)).toFixed(2)}
+          </div>
+          <div className="card-subtitle">Today's net flow</div>
         </div>
       </div>
 

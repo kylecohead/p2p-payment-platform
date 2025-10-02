@@ -8,6 +8,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [theme, setTheme] = useState(() => {
+    // Initialize theme from localStorage or default to light
     return localStorage.getItem("theme") || "light";
   });
 
@@ -25,6 +26,7 @@ export default function Layout() {
   }, [navigate]);
 
   useEffect(() => {
+    // Apply theme to document root
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);

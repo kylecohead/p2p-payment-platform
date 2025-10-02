@@ -1,10 +1,10 @@
 // Landing page
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
+import PaymentNetwork from "../components/PaymentNetwork";
 import "./LandingPage.css";
-import P2P from "../assets/P2P.png";
 import ShadowLeft from "../assets/ShadowLeft.png";
 import ShadowRight from "../assets/ShadowRight.png";
 
@@ -39,8 +39,8 @@ export default function LandingPage() {
               Open Account
             </button>
           </div>
-          <div className="image-section">
-            <img src={P2P} alt="P2P Illustration" className="p2p-image" />
+          <div className="network-section">
+            <PaymentNetwork />
           </div>
         </div>
       </main>

@@ -1,37 +1,42 @@
 .login-page {
   display: grid;
-    grid-template-rows: 60px 1fr 60px;
+  grid-template-rows: 60px 1fr 60px;
   grid-template-areas:
     "topBar"
     "content"
     "footer";
   min-height: 100vh;
   min-width: 100vw;
-  background: var(--white);
+  background: var(--background);
+  transition: background-color var(--transition-speed) ease;
 }
 .login-page-content {
   grid-area: content;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--white);
+  background-color: var(--background);
   position: relative;
   padding: 2rem;
+  transition: background-color var(--transition-speed) ease;
 }
 
 .login-card {
-  background-color: var(--gray-100);
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
   width: 100%;
   max-width: 400px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .login-card h2 {
   text-align: center;
   margin-bottom: 1.5rem;
-  color: var(--gray-900);
+  color: var(--text-primary);
 }
 
 .form-text {
@@ -55,38 +60,48 @@
 
 .submit-button {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.875rem;
   font-size: 1rem;
+  font-weight: 600;
   border: none;
-  border-radius: 6px;
-  background-color: var(--primary);
+  border-radius: 8px;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
   color: var(--white);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(68, 173, 114, 0.3);
+  margin-bottom: 1.5rem;
 }
 
 .submit-button:hover {
-  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(68, 173, 114, 0.4);
 }
 
 .switch-button {
   background: none;
   border: none;
-  color: var(--primary, rgb(231, 158, 0));
+  color: var(--primary);
   cursor: pointer;
   text-decoration: underline;
   font-size: 0.9rem;
+  font-weight: 500;
   padding: 0;
   transition: color 0.3s ease;
 }
 
 .switch-button:hover {
-  color: var(--gray-900);
+  color: var(--primary-dark);
 }
 
 .switch-text {
   text-align: center;
   margin-top: 1rem;
+  color: var(--text-secondary);
 }
 
 .login-page-footer {
