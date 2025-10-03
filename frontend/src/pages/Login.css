@@ -58,6 +58,43 @@
   outline: none;
 }
 
+.password-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-600);
+  transition: color 0.3s ease;
+  border-radius: 4px;
+  transform: translateY(-80%);
+}
+
+.password-toggle:hover {
+  color: var(--gray-800);
+  background-color: var(--gray-100);
+}
+
+.password-toggle:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .submit-button {
   width: 100%;
   padding: 0.75rem;
