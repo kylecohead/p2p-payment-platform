@@ -9,10 +9,11 @@ export default function PaymentNetwork() {
     const ctx = canvas.getContext("2d");
     let animationFrameId;
 
-    // Set canvas size
+    // Set canvas size to fixed dimensions
     const resizeCanvas = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      const container = canvas.parentElement;
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
     };
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
@@ -22,7 +23,7 @@ export default function PaymentNetwork() {
 
     // Network nodes (wallets/users)
     const nodes = [];
-    const numNodes = 8;
+    const numNodes = 12;
 
     for (let i = 0; i < numNodes; i++) {
       nodes.push({
@@ -148,8 +149,8 @@ export default function PaymentNetwork() {
       });
 
       // Draw connections between nearby nodes
-      ctx.strokeStyle = "rgba(68, 173, 114, 0.1)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(68, 173, 114, 0.3)";
+      ctx.lineWidth = 1.5;
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[j].x - nodes[i].x;

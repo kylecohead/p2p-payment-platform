@@ -235,7 +235,7 @@ h3 {
 
 .btn-signin:hover {
   color: var(--white);
-  border-color: var(--primary-dark);
+  border-color: var(--primary);
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 6px 20px rgba(68, 173, 114, 0.4);
 }
