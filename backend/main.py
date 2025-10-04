@@ -10,6 +10,7 @@ from src.services.auth import AuthService
 from src.models.transaction import Transaction
 from src.models.alert import Alert
 from src.models.block import Block, BlockType
+from src.models.beneficiary import Beneficiary
 from src.services.rules import RuleEngine
 from src.services.payment_reference import PaymentReferenceService
 from src.services.payment_history import PaymentHistoryService
@@ -319,6 +320,37 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
         db.refresh(tx)
         db.refresh(sender)
 
+        #when sender pays recipient for the first time, add to beneficiaries table
+        try:
+            # Check if beneficiary already exists for the sender's user
+            sender_user = db.query(User).filter(User.id == sender.user_id).first()
+            recipient_user_obj = db.query(User).filter(User.id == recipient.user_id).first()
+            if sender_user and recipient_user_obj:
+                exists = db.query(Beneficiary).filter(
+                    Beneficiary.owner_user_id == sender_user.id,
+                    Beneficiary.recipient_user_id == recipient_user_obj.id
+                ).first()
+                if not exists:
+                    b = Beneficiary(
+                        owner_user_id=sender_user.id,
+                        recipient_user_id=recipient_user_obj.id,
+                        name=recipient_user_obj.name,
+                        email=recipient_user_obj.email,
+                        account_id=recipient.id,
+                        account_number=getattr(recipient, 'account_number', None)
+                    )
+                    db.add(b)
+                    db.commit()
+                else:
+                    # update last_used_at and usage_count
+                    exists.last_used_at = datetime.now(timezone.utc)
+                    exists.usage_count = (exists.usage_count or 0) + 1
+                    db.add(exists)
+                    db.commit()
+        except Exception as e:
+            # non-fatal - beneficiary upsert failure shouldn't break transfer
+            print(f"Warning: beneficiary upsert failed: {e}")
+
         return {
             "transaction_id": tx.id,
             "status": tx.status,
@@ -387,6 +419,31 @@ def get_payment_history(client_id: int, limit: int = 100, db: Session = Depends(
             "total_count": 0,
             "error": str(e)
         }
+
+
+@app.get("/api/beneficiaries/{client_id}")
+def list_beneficiaries(client_id: int, db: Session = Depends(get_db)):
+    """List beneficiaries for a given user (client_id is user.id)."""
+    # Ensure user exists
+    user = db.query(User).filter(User.id == client_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    ben_list = db.query(Beneficiary).filter(Beneficiary.owner_user_id == client_id).order_by(Beneficiary.last_used_at.desc()).all()
+    out = []
+    for b in ben_list:
+        out.append({
+            "id": b.id,
+            "name": b.name,
+            "email": b.email,
+            "account_id": b.account_id,
+            "account_number": b.account_number,
+            "nickname": b.nickname,
+            "last_used_at": getattr(b.last_used_at, 'isoformat', lambda: None)(),
+            "usage_count": b.usage_count or 0,
+        })
+
+    return {"beneficiaries": out, "total_count": len(out)}
 
 if __name__ == "__main__":
     import uvicorn
