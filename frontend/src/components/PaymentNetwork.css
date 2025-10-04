@@ -1,0 +1,21 @@
+.payment-network-container {
+  width: 1600px;
+  height: 1000px;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.payment-network-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+html[data-theme="dark"] .payment-network-container {
+  background: radial-gradient(
+    circle at center,
+    rgba(92, 232, 125, 0.08) 0%,
+    transparent 70%
+  );
+}

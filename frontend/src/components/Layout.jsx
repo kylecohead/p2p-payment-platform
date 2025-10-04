@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import TopBar from "./TopBar";
 import SideNav from "./SideNav";
+import Chatbot from "./Chatbot";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function Layout() {
       <main className="content">
         <Outlet />
       </main>
+      <Chatbot />
     </div>
   );
 }

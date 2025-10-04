@@ -193,6 +193,68 @@ h3 {
 }
 
 /* Button variants */
+.btn-signin {
+  /* Reduce padding to compensate for 2px border on all sides */
+  padding: calc(0.875rem - 2px) calc(1.75rem - 2px);
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.02em;
+  background: transparent;
+  color: var(--primary);
+  box-shadow: none;
+  margin-right: 0.75rem;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.btn-signin::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+}
+
+.btn-signin:hover::before {
+  left: 0;
+}
+
+.btn-signin:hover {
+  color: var(--white);
+  border-color: var(--primary);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(68, 173, 114, 0.4);
+}
+
+.btn-signin:active {
+  transform: translateY(0) scale(1);
+  box-shadow: 0 2px 8px rgba(68, 173, 114, 0.3);
+}
+
+.btn-signin:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.btn-signin:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .btn.btn-outline {
   background: transparent;
   color: var(--primary);
@@ -577,6 +639,25 @@ html[data-theme="dark"] .nav-link.active {
   display: flex;
   align-items: center;
   cursor: pointer;
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    #52c97f 50%,
+    var(--primary-dark) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
 }
 
 .topbar-right {
