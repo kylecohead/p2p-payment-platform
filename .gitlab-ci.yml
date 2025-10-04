@@ -33,6 +33,7 @@ lint:
     - main
     - dev-frontend
     - dev-sprint3
+    - /^feature\/.*$/
 
 # Run unit tests
 test:
@@ -62,6 +63,7 @@ test:
     - main
     - dev-frontend
     - dev-sprint3
+    - /^feature\/.*$/
 
 # Build the application
 build:
@@ -82,3 +84,4 @@ build:
     - merge_requests
     - main
     - dev-frontend
+    - /^feature\/.*$/
