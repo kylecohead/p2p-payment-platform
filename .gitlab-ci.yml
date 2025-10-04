@@ -23,6 +23,8 @@ cache:
 install_dependencies:
   stage: install
   image: node:${NODE_VERSION}
+  tags:
+    - shared-docker-runner
   script:
     - cd frontend
     - npm ci --cache .npm --prefer-offline
@@ -35,6 +37,8 @@ install_dependencies:
 lint:
   stage: test
   image: node:${NODE_VERSION}
+  tags:
+    - shared-docker-runner
   dependencies:
     - install_dependencies
   script:
@@ -50,6 +54,8 @@ lint:
 test:
   stage: test
   image: node:${NODE_VERSION}
+  tags:
+    - shared-docker-runner
   dependencies:
     - install_dependencies
   script:
@@ -77,6 +83,8 @@ test:
 build:
   stage: build
   image: node:${NODE_VERSION}
+  tags:
+    - shared-docker-runner
   dependencies:
     - install_dependencies
   script:
