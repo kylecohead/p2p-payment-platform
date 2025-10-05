@@ -4,18 +4,19 @@
 
 ### Test Suite Status
 
-✅ **All 32 tests passing** across 6 test files
+✅ **All 52 tests passing** across 7 test files
 
 ### Test Coverage
 
-| Component      | Tests    | Coverage |
-| -------------- | -------- | -------- |
-| Mascot         | 10 tests | 100%     |
-| NotFound       | 4 tests  | 100%     |
-| LandingPage    | 5 tests  | 95%      |
-| Popup          | 4 tests  | 92%      |
-| PaymentNetwork | 4 tests  | 69%      |
-| Login          | 5 tests  | 48%      |
+| Component          | Tests    | Coverage | Focus                   |
+| ------------------ | -------- | -------- | ----------------------- |
+| Chatbot (Security) | 20 tests | TBD      | 🔒 **Security Testing** |
+| Mascot             | 10 tests | 100%     | UI Components           |
+| Login              | 5 tests  | 48%      | Authentication          |
+| LandingPage        | 5 tests  | 95%      | Page Layout             |
+| NotFound           | 4 tests  | 100%     | Error Pages             |
+| Popup              | 4 tests  | 92%      | UI Components           |
+| PaymentNetwork     | 4 tests  | 69%      | Visualization           |
 
 ### Running Tests Locally
 
@@ -40,6 +41,14 @@ The pipeline automatically runs on push to `main`, `dev-frontend`, `dev-sprint3`
 
 ### Test Files
 
+- `tests/components/Chatbot.security.test.jsx` - **🔒 Security Tests** (20 tests)
+  - Prompt injection attacks
+  - Admin feature disclosure protection
+  - Social engineering defenses
+  - Malicious code injection protection
+  - API safety response handling
+  - Input validation & sanitization
+  - Configuration security
 - `tests/pages/Login.test.jsx` - Login form, mascot, password visibility
 - `tests/pages/LandingPage.test.jsx` - Branding, buttons, navigation
 - `tests/pages/NotFound.test.jsx` - 404 error page
