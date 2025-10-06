@@ -25,11 +25,12 @@
   transform: translateX(-50%);
   width: 50px;
   height: 45px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 12px;
-  border: 2px solid #6c757d;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15),
-    inset 0 1px 3px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(145deg, #ffffff 0%, #f0f0f0 50%, #e8e8e8 100%);
+  border-radius: 18px;
+  border: 2px solid #8a9197;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.05);
   z-index: 2;
   overflow: visible;
 }
@@ -120,22 +121,23 @@
 /* Robot Eyes */
 .bot-eye {
   position: absolute;
-  top: 12px;
-  width: 12px;
-  height: 12px;
-  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #f8f9fa 100%);
+  top: 14px;
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e3f2fd 100%);
   border-radius: 50%;
-  border: 1px solid #adb5bd;
+  border: 2px solid #6c757d;
   transition: all 0.3s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .bot-eye-left {
-  left: 8px;
+  left: 7px;
 }
 
 .bot-eye-right {
-  right: 8px;
+  right: 7px;
 }
 
 .bot-eye.hidden {
@@ -145,23 +147,25 @@
 
 .eye-pupil {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 4px;
-  height: 4px;
-  background: var(--primary);
+  top: 5px;
+  left: 5px;
+  width: 5px;
+  height: 5px;
+  background: radial-gradient(circle at 30% 30%, #2c3e50 0%, #1a252f 100%);
   border-radius: 50%;
   transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .eye-shine {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 2px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.9);
+  top: 2px;
+  left: 2px;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 1);
   border-radius: 50%;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 /* Privacy Visor - Always present */
@@ -247,22 +251,19 @@
   bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 12px;
-  height: 6px;
-  background: linear-gradient(135deg, #343a40 0%, #495057 100%);
-  border-radius: 6px;
-  border: 1px solid #212529;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  width: 8px;
+  height: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mouth-line {
-  width: 6px;
-  height: 2px;
-  background: #212529;
-  border-radius: 1px;
+  width: 8px;
+  height: 4px;
+  background: #6c757d;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
 /* Face Panel Lines */
