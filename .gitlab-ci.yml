@@ -1,0 +1,23 @@
+stages: [test]
+
+backend_tests:
+  stage: test
+  image: python:3.11
+  before_script:
+    - python --version
+    - pip install --upgrade pip
+    - cd backend
+    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
+  script:
+    - pytest -q --junitxml=pytest-report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: backend/pytest-report.xml
+    paths:
+      - backend/pytest-report.xml
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .cache/pip
