@@ -1,35 +1,23 @@
-# GitLab CI/CD Pipeline for Backend Testing
-
-stages: [test]
-
-variables:
-  PYTHON_VERSION: "3.11"
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  # Fallback DB just for tests; override in GitLab > Settings > CI/CD > Variables
-  DATABASE_URL: "sqlite:///./tests/tmp/test.db"
-  # Example extra config your app might need (optional; define in CI/CD > Variables)
-  # SECRET_KEY: "set-in-gitlab-vars"
-
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - .cache/pip/
-
 backend_tests:
   stage: test
-  image: python:${PYTHON_VERSION}
+  image: python:3.11
   tags: [shared-docker-runner]
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-deps-v2"
+    paths:
+      - .cache/pip/
   before_script:
     - python --version
     - pip install --upgrade pip
     - cd backend
     - pip install -r requirements.txt
     - pip install -r requirements-dev.txt
-    # create a .env for the app to read (your code expects it explicitly)
+    - pip install "bcrypt<4" --upgrade
+    - pip freeze | grep -E 'passlib|bcrypt'
     - mkdir -p tests/tmp
     - |
       cat > .env <<EOF
-      DATABASE_URL=${DATABASE_URL}
+      DATABASE_URL=${DATABASE_URL:-sqlite:///./tests/tmp/test.db}
       SECRET_KEY=${SECRET_KEY}
       EOF
   script:
