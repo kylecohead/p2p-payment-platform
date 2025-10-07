@@ -1,32 +1,38 @@
 # GitLab CI/CD Pipeline for Backend Testing
 
-stages:
-  - test
+stages: [test]
 
-# Define variables
 variables:
   PYTHON_VERSION: "3.11"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # Fallback DB just for tests; override in GitLab > Settings > CI/CD > Variables
+  DATABASE_URL: "sqlite:///./tests/tmp/test.db"
+  # Example extra config your app might need (optional; define in CI/CD > Variables)
+  # SECRET_KEY: "set-in-gitlab-vars"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cache/pip/
 
-# Run backend unit tests (pytest)
 backend_tests:
   stage: test
   image: python:${PYTHON_VERSION}
-  tags:
-    - shared-docker-runner
+  tags: [shared-docker-runner]
   before_script:
     - python --version
     - pip install --upgrade pip
     - cd backend
     - pip install -r requirements.txt
     - pip install -r requirements-dev.txt
+    # create a .env for the app to read (your code expects it explicitly)
+    - mkdir -p tests/tmp
+    - |
+      cat > .env <<EOF
+      DATABASE_URL=${DATABASE_URL}
+      SECRET_KEY=${SECRET_KEY}
+      EOF
   script:
-    # JUnit + coverage XML so GitLab can parse results
     - pytest -q --junitxml=pytest-report.xml --cov=src --cov-report=term --cov-report=xml
   artifacts:
     when: always
