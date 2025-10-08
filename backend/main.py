@@ -272,7 +272,7 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             for a in alerts:
                 db.add(a)
             db.commit()     
-            message = ", ".join(violations)
+            message = "Violations: " + ", ".join(violations)
             raise HTTPException(status_code=409, detail=message)
 
         # Allowed: move funds + create transaction atomically under the same lock

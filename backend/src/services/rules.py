@@ -45,7 +45,7 @@ class RuleEngine:
             Block.removed_at.is_(None),
         ).first()
         if sender_block:
-            violations.append("BLOCKED_SENDER")
+            violations.append("You're blocked from sending transfers.")
 
         recipient_block = db.query(Block).filter(
             Block.block_type == BlockType.RECIPIENT,
@@ -53,7 +53,7 @@ class RuleEngine:
             Block.removed_at.is_(None),
         ).first()
         if recipient_block:
-            violations.append("BLOCKED_RECIPIENT")
+            violations.append("Recipient is blocked from receiving transfers")
 
         # Balance checks (hard stops per good banking sense)
         new_balance = (sender.balance or Decimal("0")) - amount
@@ -66,7 +66,7 @@ class RuleEngine:
                 message="Transfer would result in a negative balance.",
                 created_at=now, updated_at=now, cleared=False
             ))
-            violations.append("NEGATIVE_BAL")
+            violations.append("Transfer would result in a negative balance")
             # Zero balance rule
         elif new_balance == 0:
             alerts.append(Alert(
@@ -76,7 +76,6 @@ class RuleEngine:
                 message="Transfer would drain the account to exactly zero.",
                 created_at=now, updated_at=now, cleared=False
             ))
-            violations.append("ZERO_BAL")
 
         # Amount rule (> R5000)
         if amount > AMOUNT_LIMIT:
@@ -87,7 +86,6 @@ class RuleEngine:
                 message=f"Transfer amount exceeds R{AMOUNT_LIMIT.normalize()}.",
                 created_at=now, updated_at=now, cleared=False
             ))
-            violations.append("AMOUNT_TOO_LARGE")
 
         # Burst rule: more than 3 transfers in 60s
         window_start = now - timedelta(seconds=BURST_WINDOW_SECONDS)
@@ -105,7 +103,6 @@ class RuleEngine:
                 message=f"More than {BURST_MAX} transfers initiated within {BURST_WINDOW_SECONDS}s.",
                 created_at=now, updated_at=now, cleared=False
             ))
-            violations.append("TOO_MANY_TRANSACTIONS_60S")
 
         # Daily total sent (> R10000)
         start_of_day = cls._start_of_local_day(now)
@@ -123,11 +120,8 @@ class RuleEngine:
                 message=f"Projected daily total sent exceeds R{DAILY_LIMIT.normalize()}.",
                 created_at=now, updated_at=now, cleared=False
             ))
-            violations.append("DAILY_AMOUNT_LIMIT_EXCEEDED")
 
-        """ allowed = len([v for v in violations if v in ("BLOCKED_SENDER","BLOCKED_RECIPIENT","NEGATIVE_BAL",
-                                                       "AMOUNT_TOO_LARGE", "TOO_MANY_TRANSACTIONS_60S",
-                                                       "DAILY_AMOUNT_LIMIT_EXCEEDED", "ZERO_BAL"
-                                                       )]) == 0 """
-        allowed = len(violations) == 0 # temporary autoblock for any violation
+        allowed = len([v for v in violations if v in ("You're blocked from sending transfers",
+                                                      "Recipient is blocked from receiving transfers",
+                                                      "Transfer would result in a negative balance")]) == 0
         return allowed, alerts, violations

@@ -1,0 +1,41 @@
+backend_tests: # test backend with pytest and coverage
+  stage: test
+  image: python:3.11
+  tags: [shared-docker-runner]
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-deps-v2"
+    paths:
+      - .cache/pip/
+  before_script:
+    - python --version
+    - pip install --upgrade pip
+    - cd backend
+    - pip install -r requirements.txt # install main dependencies
+    - pip install -r requirements-dev.txt # for pytest and coverage
+    - pip install "bcrypt<4" --upgrade  # to avoid build issues with bcrypt 4 on CI
+    - pip freeze | grep -E 'passlib|bcrypt'
+    - mkdir -p tests/tmp 
+    - |
+      cat > .env <<EOF
+      DATABASE_URL=${DATABASE_URL:-sqlite:///./tests/tmp/test.db}
+      SECRET_KEY=${SECRET_KEY}
+      EOF
+  script:
+    - pytest -q --junitxml=pytest-report.xml --cov=src --cov-report=term --cov-report=xml # run BE tests with coverage
+  artifacts:
+    when: always
+    reports:
+      junit: backend/pytest-report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    paths:
+      - backend/pytest-report.xml
+      - backend/coverage.xml
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - dev-frontend
+    - dev-sprint3
+    - /^feature\/.*$/
