@@ -39,37 +39,49 @@ export default function Dashboard() {
     let aborted = false;
 
     // Setup SSE connection for real-time updates
-    const handleSSEMessage = (data) => {
+  const handleSSEMessage = async (event) => {
+    if (!event.data) return;
+    
+    try {
+      console.log("Dashboard: SSE message received:", event.data);
+      const data = JSON.parse(event.data);
+      
+      // Handle keepalive pings
       if (data.type === 'ping') {
-        // Keep-alive ping, ignore
+        console.log("Dashboard: Received keepalive ping");
         return;
       }
       
-      if (data.type === 'balance_updated' && data.client_id === parsed.id) {
-        // Update balance immediately
-        setBalance(data.data.new_balance);
+      // Handle balance updates
+      if (data.type === 'balance_updated') {
+        console.log("Dashboard: Processing balance update:", data);
         
-        // Update user data
-        setUser((prevUser) => ({
-          ...prevUser,
-          balance: data.data.new_balance
-        }));
+        // Update client data to get new balance
+        await loadClientData();
         
-        // Update localStorage
-        try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({
-            ...stored,
-            balance: data.data.new_balance
-          }));
-        } catch (e) {}
+        // Also refresh payment history to show new transactions
+        await loadPaymentHistory();
         
-        // Refresh payment history after balance update
-        loadPaymentHistory();
+        // Show a notification to the user
+        if (data.transaction_type === 'received') {
+          console.log(`Received ${data.amount} from ${data.sender || 'someone'}`);
+        } else if (data.transaction_type === 'sent') {
+          console.log(`Sent ${data.amount} to ${data.recipient || 'someone'}`);
+        } else if (data.transaction_type === 'topup') {
+          console.log(`Account topped up with ${data.amount}`);
+        }
       }
-    };
-
-    const handleSSEError = (error) => {
+      
+      // Handle other notification types
+      else if (data.type === 'payment_update') {
+        console.log("Dashboard: Processing payment update");
+        await loadPaymentHistory();
+      }
+      
+    } catch (error) {
+      console.error("Dashboard: Error processing SSE message:", error);
+    }
+  };    const handleSSEError = (error) => {
       console.error("SSE connection error:", error);
     };
 
@@ -107,11 +119,11 @@ export default function Dashboard() {
       await loadPaymentHistory();
     }
 
-    // Run initial load
+    // Run initial load and setup SSE
     (async () => {
       await loadClientAndPayments();
-      // Temporarily disable SSE to test topup
-      // SSEService.connect(parsed.id, handleSSEMessage, handleSSEError);
+      // Setup SSE connection after initial load
+      SSEService.connect(parsed.id, handleSSEMessage, handleSSEError);
     })();
 
     // Remove window focus and visibility listeners that cause excessive API calls

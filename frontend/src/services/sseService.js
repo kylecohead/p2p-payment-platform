@@ -16,39 +16,50 @@ class SSEService {
    * @param {function} onMessage - Callback for messages
    * @param {function} onError - Callback for errors
    */
-  connect(clientId, onMessage, onError = null) {
-    // Close existing connection if any
-    this.disconnect(clientId);
+  connect(clientId, onMessage, onError) {
+    if (this.eventSource) {
+      this.disconnect();
+    }
 
-    const eventSource = new EventSource(`${API_BASE_URL}/api/events/${clientId}`);
+    console.log(`SSEService: Connecting to SSE for client ${clientId}`);
+    this.eventSource = new EventSource(`http://localhost:8000/api/events/${clientId}`);
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
     
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        onMessage(data);
-      } catch (e) {
-        console.error("Error parsing SSE message:", e);
+    this.eventSource.onopen = () => {
+      console.log('SSEService: SSE connection opened');
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+    };
+    
+    this.eventSource.onmessage = (event) => {
+      console.log('SSEService: Message received:', event.data);
+      if (onMessage) {
+        onMessage(event);
       }
     };
-
-    eventSource.onerror = (error) => {
-      console.error("SSE connection error:", error);
+    
+    this.eventSource.onerror = (error) => {
+      console.error('SSEService: SSE connection error:', error);
+      this.isConnected = false;
+      
       if (onError) {
         onError(error);
       }
       
-      // Auto-reconnect after 5 seconds
-      setTimeout(() => {
-        if (this.eventSources.has(clientId)) {
-          eventSource.close();
+      // Auto-reconnect with exponential backoff
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+        console.log(`SSEService: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+        
+        setTimeout(() => {
+          this.reconnectAttempts++;
           this.connect(clientId, onMessage, onError);
-        }
-      }, 5000);
+        }, delay);
+      } else {
+        console.error('SSEService: Max reconnection attempts reached');
+      }
     };
-
-    this.eventSources.set(clientId, eventSource);
-    
-    return eventSource;
   }
 
   /**

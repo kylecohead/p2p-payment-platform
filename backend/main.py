@@ -21,37 +21,37 @@ from typing import Optional, List, Dict, Set
 from decimal import Decimal
 from datetime import datetime, timezone
 import secrets
-import queue
-import threading
+import asyncio
+import weakref
 
 app = FastAPI()
 
-# Global notification system for SSE
+# Global notification system for SSE - using async queues instead of threading
 class NotificationManager:
     def __init__(self):
-        self.subscribers: Dict[int, Set[queue.Queue]] = {}
-        self.lock = threading.Lock()
+        self.subscribers: Dict[int, Set[asyncio.Queue]] = {}
+        self.lock = asyncio.Lock()
     
-    def subscribe(self, client_id: int) -> queue.Queue:
+    async def subscribe(self, client_id: int) -> asyncio.Queue:
         """Subscribe a client to notifications"""
-        client_queue = queue.Queue()
-        with self.lock:
+        client_queue = asyncio.Queue()
+        async with self.lock:
             if client_id not in self.subscribers:
                 self.subscribers[client_id] = set()
             self.subscribers[client_id].add(client_queue)
         return client_queue
     
-    def unsubscribe(self, client_id: int, client_queue: queue.Queue):
+    async def unsubscribe(self, client_id: int, client_queue: asyncio.Queue):
         """Unsubscribe a client from notifications"""
-        with self.lock:
+        async with self.lock:
             if client_id in self.subscribers:
                 self.subscribers[client_id].discard(client_queue)
                 if not self.subscribers[client_id]:
                     del self.subscribers[client_id]
     
-    def notify(self, client_id: int, event_type: str, data: dict):
+    async def notify(self, client_id: int, event_type: str, data: dict):
         """Send notification to all subscribers of a client"""
-        with self.lock:
+        async with self.lock:
             if client_id in self.subscribers:
                 message = {
                     "type": event_type,
@@ -60,12 +60,17 @@ class NotificationManager:
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 # Send to all queues for this client
+                dead_queues = []
                 for client_queue in self.subscribers[client_id].copy():
                     try:
-                        client_queue.put_nowait(message)
-                    except queue.Full:
-                        # Remove full queues (client disconnected)
-                        self.subscribers[client_id].discard(client_queue)
+                        await client_queue.put(message)
+                    except Exception:
+                        # Mark queue for removal (client disconnected)
+                        dead_queues.append(client_queue)
+                
+                # Remove dead queues
+                for dead_queue in dead_queues:
+                    self.subscribers[client_id].discard(dead_queue)
 
 # Global notification manager instance
 notification_manager = NotificationManager()
@@ -215,31 +220,23 @@ async def get_events(client_id: int):
     """Server-Sent Events endpoint for real-time notifications"""
     
     async def event_stream():
-        client_queue = notification_manager.subscribe(client_id)
+        client_queue = await notification_manager.subscribe(client_id)
         try:
             while True:
                 try:
-                    # Use asyncio-compatible queue check
-                    message = None
-                    try:
-                        message = client_queue.get_nowait()
-                    except queue.Empty:
-                        # Send keepalive ping every 30 seconds
-                        yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
-                        await asyncio.sleep(30)  # Wait 30 seconds before next check
-                        continue
-                    
-                    if message:
-                        yield f"data: {json.dumps(message)}\n\n"
-                        await asyncio.sleep(0.1)  # Small delay to prevent busy waiting
-                        
+                    # Wait for a message with timeout
+                    message = await asyncio.wait_for(client_queue.get(), timeout=30.0)
+                    yield f"data: {json.dumps(message)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keepalive ping every 30 seconds
+                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
                 except Exception as e:
                     print(f"SSE error: {e}")
                     break
         except asyncio.CancelledError:
             pass
         finally:
-            notification_manager.unsubscribe(client_id, client_queue)
+            await notification_manager.unsubscribe(client_id, client_queue)
     
     return StreamingResponse(
         event_stream(),
@@ -281,7 +278,7 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
     }
 
 @app.post("/api/topup/{client_id}")
-def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
+async def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
     # interpret client_id as user_id and top up the user's first account
     user = db.query(User).filter(User.id == client_id).first()
     if not user:
@@ -304,7 +301,7 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
 
     # Send real-time notification for topup
     try:
-        notification_manager.notify(
+        await notification_manager.notify(
             client_id,
             "balance_updated",
             {
@@ -326,7 +323,7 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
 
 # Delegate requests to /api/transfers
 @app.post("/api/send/{client_id}")
-def send_money(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
+async def send_money(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
     if not transaction.recipient_email:
         raise HTTPException(status_code=400, detail="Recipient email required")
     sender_account = db.query(Account).filter(Account.user_id == client_id).first()
@@ -341,10 +338,10 @@ def send_money(client_id: int, transaction: TransactionCreate, db: Session = Dep
     payload = TransferIn(sender_account_id=sender_account.id, recipient_account_id=recipient_account.id,
                          amount=transaction.amount, reference=transaction.reference, method="p2p", 
                          description=transaction.description or "Payment transfer")
-    return create_transfer(payload, db)
+    return await create_transfer(payload, db)
 
 @app.post("/api/transfers")
-def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
+async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
     amount = Decimal(str(payload.amount))
 
     # Lock both accounts in a deterministic order to avoid deadlocks
@@ -432,31 +429,37 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
         
         # Notify sender
         if sender_user:
-            notification_manager.notify(
-                sender_user.id,
-                "balance_updated",
-                {
-                    "new_balance": float(sender.balance or Decimal("0")),
-                    "transaction_type": "sent",
-                    "amount": float(amount),
-                    "description": description,
-                    "recipient": recipient_user.name if recipient_user else "Unknown"
-                }
-            )
+            try:
+                await notification_manager.notify(
+                    sender_user.id,
+                    "balance_updated",
+                    {
+                        "new_balance": float(sender.balance or Decimal("0")),
+                        "transaction_type": "sent",
+                        "amount": float(amount),
+                        "description": description,
+                        "recipient": recipient_user.name if recipient_user else "Unknown"
+                    }
+                )
+            except Exception as e:
+                print(f"Notification error for sender: {e}")
         
         # Notify recipient
         if recipient_user:
-            notification_manager.notify(
-                recipient_user.id,
-                "balance_updated", 
-                {
-                    "new_balance": float(recipient.balance or Decimal("0")),
-                    "transaction_type": "received",
-                    "amount": float(amount),
-                    "description": description,
-                    "sender": sender_user.name if sender_user else "Unknown"
-                }
-            )
+            try:
+                await notification_manager.notify(
+                    recipient_user.id,
+                    "balance_updated", 
+                    {
+                        "new_balance": float(recipient.balance or Decimal("0")),
+                        "transaction_type": "received",
+                        "amount": float(amount),
+                        "description": description,
+                        "sender": sender_user.name if sender_user else "Unknown"
+                    }
+                )
+            except Exception as e:
+                print(f"Notification error for recipient: {e}")
 
         return {
             "transaction_id": tx.id,
