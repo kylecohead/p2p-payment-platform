@@ -1,13 +1,13 @@
 // Dashboard page
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import TopupPanel from "../components/TopupPanel";
 import Popup from '../components/Popup';
 import "./Dashboard.css";
 import ApiService from "../services/api";
-import SSEService from "../services/sseService";
+import { useSSE } from "../contexts/SSEContext";
 
 // We'll derive today's totals from the recent_payment_history returned by the backend.
 const today = new Date().toISOString().slice(0, 10);
@@ -18,6 +18,8 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  const { addEventListener } = useSSE();
 
   // Closes the popup
   function onTopupPopupClose() {
@@ -25,26 +27,12 @@ export default function Dashboard() {
     // No need to reload since data is updated in real-time
   }
 
-  useEffect(() => {
-    const userData = localStorage.getItem("currentUser");
-    if (!userData) {
-      navigate("/login");
-      return;
-    }
-
-    const parsed = JSON.parse(userData);
-    setUser(parsed);
-    setBalance(Number(parsed.balance) || 0);
-
-    let aborted = false;
-
-    // Setup SSE connection for real-time updates
-  const handleSSEMessage = async (event) => {
-    if (!event.data) return;
+  // Memoized SSE message handler
+  const handleSSEMessage = useCallback(async (data) => {
+    if (!data) return;
     
     try {
-      console.log("Dashboard: SSE message received:", event.data);
-      const data = JSON.parse(event.data);
+      console.log("Dashboard: SSE message received:", data);
       
       // Handle keepalive pings
       if (data.type === 'ping') {
@@ -62,11 +50,8 @@ export default function Dashboard() {
       if (data.type === 'balance_updated') {
         console.log("Dashboard: Processing balance update:", data);
         
-        // Update client data to get new balance
-        await loadClientData();
-        
-        // Also refresh payment history to show new transactions
-        await loadPaymentHistory();
+        // Trigger data reload
+        setReloadTrigger(prev => prev + 1);
         
         // Show a notification to the user
         if (data.transaction_type === 'received') {
@@ -81,15 +66,46 @@ export default function Dashboard() {
       // Handle other notification types
       else if (data.type === 'payment_update') {
         console.log("Dashboard: Processing payment update");
-        await loadPaymentHistory();
+        setReloadTrigger(prev => prev + 1);
       }
       
     } catch (error) {
       console.error("Dashboard: Error processing SSE message:", error);
     }
-  };    const handleSSEError = (error) => {
-      console.error("SSE connection error:", error);
+  }, []);
+
+  // Initial load effect
+  useEffect(() => {
+    const userData = localStorage.getItem("currentUser");
+    if (!userData) {
+      navigate("/login");
+      return;
+    }
+
+    const parsed = JSON.parse(userData);
+    setUser(parsed);
+    setBalance(Number(parsed.balance) || 0);
+  }, [navigate]);
+
+  // SSE listeners effect  
+  useEffect(() => {
+    // Setup global SSE event listeners and store cleanup functions
+    const balanceCleanup = addEventListener('balance_updated', handleSSEMessage);
+    const paymentCleanup = addEventListener('payment_update', handleSSEMessage);
+
+    return () => {
+      // Clean up event listeners
+      if (balanceCleanup) balanceCleanup();
+      if (paymentCleanup) paymentCleanup();
     };
+  }, [addEventListener, handleSSEMessage]);
+
+  // Data loading effect (triggered by reloadTrigger)
+  useEffect(() => {
+    const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    if (!parsed || !parsed.id) return;
+
+    let aborted = false;
 
     // Separate function to load payment history
     async function loadPaymentHistory() {
@@ -125,35 +141,13 @@ export default function Dashboard() {
       await loadPaymentHistory();
     }
 
-    // Run initial load and setup SSE
-    (async () => {
-      await loadClientAndPayments();
-      // Setup SSE connection after initial load
-      SSEService.connect(parsed.id, handleSSEMessage, handleSSEError);
-    })();
-
-    // Remove window focus and visibility listeners that cause excessive API calls
-    // const onVis = () => {
-    //   loadClientAndPayments();
-    // };
-    // window.addEventListener("focus", onVis);
-    // document.addEventListener("visibilitychange", onVis);
-
-    // Remove legacy event listeners that are causing duplicate API calls
-    // const onAccountUpdated = (ev) => { ... };
-    // const onPaymentHistoryUpdated = (ev) => { ... };
+    // Run data loading
+    loadClientAndPayments();
 
     return () => {
       aborted = true;
-      // Temporarily disable SSE cleanup
-      // SSEService.disconnect(parsed.id);
-      // Remove the window event listeners cleanup since we're not adding them
-      // window.removeEventListener("focus", onVis);
-      // document.removeEventListener("visibilitychange", onVis);
-      // window.removeEventListener('account:updated', onAccountUpdated);
-      // window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
     };
-  }, [navigate]);
+  }, [reloadTrigger]); // Trigger reload when SSE messages are received
 
   // derive payments from the user's recent_payment_history; show only today's payments
   const recentPayments = (user && user.recent_payment_history) || [];

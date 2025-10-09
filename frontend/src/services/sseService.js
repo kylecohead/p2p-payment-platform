@@ -6,8 +6,11 @@ const API_BASE_URL = "http://localhost:8000";
 
 class SSEService {
   constructor() {
-    this.eventSources = new Map();
-    this.listeners = new Map();
+    this.eventSource = null;
+    this.currentClientId = null;
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
   }
 
   /**
@@ -17,12 +20,20 @@ class SSEService {
    * @param {function} onError - Callback for errors
    */
   connect(clientId, onMessage, onError) {
+    // Prevent multiple connections to the same client
+    if (this.eventSource && this.currentClientId === clientId) {
+      console.log(`SSEService: Already connected to client ${clientId}`);
+      return;
+    }
+
+    // Disconnect any existing connection
     if (this.eventSource) {
       this.disconnect();
     }
 
     console.log(`SSEService: Connecting to SSE for client ${clientId}`);
-    this.eventSource = new EventSource(`http://localhost:8000/api/events/${clientId}`);
+    this.eventSource = new EventSource(`${API_BASE_URL}/api/events/${clientId}`);
+    this.currentClientId = clientId;
     this.isConnected = false;
     this.reconnectAttempts = 0;
     
@@ -63,34 +74,28 @@ class SSEService {
   }
 
   /**
-   * Disconnect SSE stream for a specific client
-   * @param {number} clientId - The client ID to disconnect
+   * Disconnect SSE stream
    */
-  disconnect(clientId) {
-    const eventSource = this.eventSources.get(clientId);
-    if (eventSource) {
-      eventSource.close();
-      this.eventSources.delete(clientId);
+  disconnect() {
+    if (this.eventSource) {
+      console.log('SSEService: Disconnecting SSE connection');
+      this.eventSource.close();
+      this.eventSource = null;
+      this.currentClientId = null;
+      this.isConnected = false;
+      this.reconnectAttempts = 0;
     }
   }
 
   /**
-   * Disconnect all SSE streams
+   * Check if currently connected
    */
-  disconnectAll() {
-    this.eventSources.forEach((eventSource) => {
-      eventSource.close();
-    });
-    this.eventSources.clear();
-  }
-
-  /**
-   * Check if client is connected
-   * @param {number} clientId - The client ID to check
-   */
-  isConnected(clientId) {
-    const eventSource = this.eventSources.get(clientId);
-    return eventSource && eventSource.readyState === EventSource.OPEN;
+  getConnectionStatus() {
+    return {
+      isConnected: this.isConnected,
+      clientId: this.currentClientId,
+      readyState: this.eventSource ? this.eventSource.readyState : null
+    };
   }
 }
 
