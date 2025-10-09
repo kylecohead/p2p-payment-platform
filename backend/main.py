@@ -24,16 +24,41 @@ import secrets
 import asyncio
 import weakref
 
-app = FastAPI()
+import signal
+import asyncio
+from contextlib import asynccontextmanager, redirect_stderr
+import logging
+import warnings
+import sys
+import os
+from io import StringIO
+
+# Suppress specific warnings 
+warnings.filterwarnings("ignore", message="Valid config keys have changed in V2")
+
+# Context manager to suppress stderr during shutdown
+@asynccontextmanager
+async def suppress_shutdown_errors():
+    """Temporarily suppress stderr to hide shutdown error traces"""
+    old_stderr = sys.stderr
+    try:
+        sys.stderr = StringIO()  # Capture stderr instead of printing
+        yield
+    finally:
+        sys.stderr = old_stderr
 
 # Global notification system for SSE - using async queues instead of threading
 class NotificationManager:
     def __init__(self):
         self.subscribers: Dict[int, Set[asyncio.Queue]] = {}
         self.lock = asyncio.Lock()
+        self._shutdown = False
     
     async def subscribe(self, client_id: int) -> asyncio.Queue:
         """Subscribe a client to notifications"""
+        if self._shutdown:
+            raise ConnectionError("Server is shutting down")
+            
         client_queue = asyncio.Queue()
         async with self.lock:
             if client_id not in self.subscribers:
@@ -51,6 +76,9 @@ class NotificationManager:
     
     async def notify(self, client_id: int, event_type: str, data: dict):
         """Send notification to all subscribers of a client"""
+        if self._shutdown:
+            return  # Don't send notifications during shutdown
+            
         async with self.lock:
             if client_id in self.subscribers:
                 message = {
@@ -71,9 +99,41 @@ class NotificationManager:
                 # Remove dead queues
                 for dead_queue in dead_queues:
                     self.subscribers[client_id].discard(dead_queue)
+    
+    async def shutdown(self):
+        """Shutdown notification manager and close all connections"""
+        print("NotificationManager: Starting shutdown...")
+        self._shutdown = True
+        
+        async with self.lock:
+            # Send shutdown signal to all queues
+            for client_id, queues in self.subscribers.items():
+                for queue in queues:
+                    try:
+                        await queue.put({"type": "shutdown"})
+                    except Exception as e:
+                        print(f"Error sending shutdown signal to client {client_id}: {e}")
+            
+            # Give a moment for messages to be processed
+            await asyncio.sleep(0.1)
+            
+            # Clear all subscribers
+            self.subscribers.clear()
+            print("NotificationManager: Shutdown complete")
 
 # Global notification manager instance
 notification_manager = NotificationManager()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Starting up...")
+    yield
+    # Shutdown
+    print("Shutting down...")
+    await notification_manager.shutdown()
+
+app = FastAPI(lifespan=lifespan)
 
 # Allow CORS for frontend connection
 app.add_middleware(
@@ -220,30 +280,52 @@ async def get_events(client_id: int):
     """Server-Sent Events endpoint for real-time notifications"""
     
     async def event_stream():
-        client_queue = await notification_manager.subscribe(client_id)
         try:
-            while True:
+            client_queue = await notification_manager.subscribe(client_id)
+        except ConnectionError:
+            # Server is shutting down
+            return
+            
+        try:
+            while not notification_manager._shutdown:
                 try:
-                    # Wait for a message with timeout
-                    message = await asyncio.wait_for(client_queue.get(), timeout=30.0)
+                    # Wait for a message with very short timeout (1s) for fastest shutdown
+                    message = await asyncio.wait_for(client_queue.get(), timeout=1.0)
+                    
+                    # Handle shutdown signal
+                    if message.get("type") == "shutdown":
+                        print(f"SSE client {client_id} received shutdown signal")
+                        break
+                        
                     yield f"data: {json.dumps(message)}\n\n"
                 except asyncio.TimeoutError:
-                    # Send keepalive ping every 30 seconds
-                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                    # Send keepalive ping every 1 second and check shutdown
+                    if not notification_manager._shutdown:
+                        yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                    else:
+                        # Shutdown detected during timeout, break immediately
+                        break
+                except asyncio.CancelledError:
+                    print(f"SSE client {client_id} connection cancelled")
+                    break
                 except Exception as e:
-                    print(f"SSE error: {e}")
+                    print(f"SSE error for client {client_id}: {e}")
                     break
         except asyncio.CancelledError:
-            pass
+            print(f"SSE client {client_id} outer cancelled")
         finally:
-            await notification_manager.unsubscribe(client_id, client_queue)
+            try:
+                await notification_manager.unsubscribe(client_id, client_queue)
+                print(f"SSE client {client_id} disconnected")
+            except:
+                pass
     
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
+            "Connection": "keep-alive", 
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Cache-Control"
         }
@@ -540,4 +622,21 @@ if __name__ == "__main__":
     port = int(os.getenv("API_PORT", 8000))
 
     print(f"Starting server on {host}:{port}")
-    uvicorn.run(app, host=host, port=port)
+    
+    # Run with uvicorn directly and handle shutdown more gracefully
+    try:
+        uvicorn.run(
+            app, 
+            host=host, 
+            port=port,
+            access_log=True,
+            log_level="info",
+            timeout_keep_alive=2,
+            timeout_graceful_shutdown=1
+        )
+    except KeyboardInterrupt:
+        print("Server shutdown complete.")
+    except Exception as e:
+        print(f"Server error: {e}")
+    finally:
+        print("Cleanup finished.")

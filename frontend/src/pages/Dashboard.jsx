@@ -52,6 +52,12 @@ export default function Dashboard() {
         return;
       }
       
+      // Handle shutdown signal
+      if (data.type === 'shutdown') {
+        console.log("Dashboard: Server is shutting down, will reconnect automatically");
+        return;
+      }
+      
       // Handle balance updates
       if (data.type === 'balance_updated') {
         console.log("Dashboard: Processing balance update:", data);
