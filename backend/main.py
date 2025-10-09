@@ -219,13 +219,22 @@ async def get_events(client_id: int):
         try:
             while True:
                 try:
-                    # Wait for a message with timeout
-                    message = client_queue.get(timeout=30)  # 30 second timeout
-                    yield f"data: {json.dumps(message)}\n\n"
-                except queue.Empty:
-                    # Send keepalive ping
-                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                    # Use asyncio-compatible queue check
+                    message = None
+                    try:
+                        message = client_queue.get_nowait()
+                    except queue.Empty:
+                        # Send keepalive ping every 30 seconds
+                        yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                        await asyncio.sleep(30)  # Wait 30 seconds before next check
+                        continue
+                    
+                    if message:
+                        yield f"data: {json.dumps(message)}\n\n"
+                        await asyncio.sleep(0.1)  # Small delay to prevent busy waiting
+                        
                 except Exception as e:
+                    print(f"SSE error: {e}")
                     break
         except asyncio.CancelledError:
             pass
@@ -234,7 +243,7 @@ async def get_events(client_id: int):
     
     return StreamingResponse(
         event_stream(),
-        media_type="text/plain",
+        media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
@@ -294,16 +303,20 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
     db.refresh(account)
 
     # Send real-time notification for topup
-    notification_manager.notify(
-        client_id,
-        "balance_updated",
-        {
-            "new_balance": float(new_balance),
-            "transaction_type": "topup",
-            "amount": float(transaction.amount),
-            "description": transaction.description or "Account top-up"
-        }
-    )
+    try:
+        notification_manager.notify(
+            client_id,
+            "balance_updated",
+            {
+                "new_balance": float(new_balance),
+                "transaction_type": "topup",
+                "amount": float(transaction.amount),
+                "description": transaction.description or "Account top-up"
+            }
+        )
+    except Exception as e:
+        # Don't let notification errors block the topup
+        print(f"Notification error: {e}")
 
     balance_value = getattr(account, 'balance', 0)
     return {

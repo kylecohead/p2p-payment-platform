@@ -19,10 +19,10 @@ export default function Dashboard() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
 
-  // Closes the popup and navigates to /dashboard
+  // Closes the popup
   function onTopupPopupClose() {
     setTopupPopupOpen(false);
-    window.location.reload();
+    // No need to reload since data is updated in real-time
   }
 
   useEffect(() => {
@@ -107,77 +107,33 @@ export default function Dashboard() {
       await loadPaymentHistory();
     }
 
-    // Run initial load and setup SSE
+    // Run initial load
     (async () => {
       await loadClientAndPayments();
-      // Setup SSE connection after initial load
-      SSEService.connect(parsed.id, handleSSEMessage, handleSSEError);
+      // Temporarily disable SSE to test topup
+      // SSEService.connect(parsed.id, handleSSEMessage, handleSSEError);
     })();
 
-    const onVis = () => {
-      loadClientAndPayments();
-    };
-    window.addEventListener("focus", onVis);
-    document.addEventListener("visibilitychange", onVis);
-    // Listen for account updates (fired after send/topup/getClient)
-    const onAccountUpdated = (ev) => {
-      try {
-        const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
-        if (!parsed || !parsed.id) return;
-        const updatedClientId = ev?.detail?.clientId;
-        // If event doesn't include clientId, always proceed; otherwise only proceed for matching id
-        if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
+    // Remove window focus and visibility listeners that cause excessive API calls
+    // const onVis = () => {
+    //   loadClientAndPayments();
+    // };
+    // window.addEventListener("focus", onVis);
+    // document.addEventListener("visibilitychange", onVis);
 
-        // If the event payload includes recent_payment_history or new_balance, apply it immediately
-        const payloadData = ev?.detail?.data;
-        if (payloadData) {
-          if (payloadData.recent_payment_history) {
-            setUser((u) => ({ ...(u || {}), recent_payment_history: payloadData.recent_payment_history }));
-            try {
-              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payloadData.recent_payment_history }));
-            } catch (e) {}
-          }
-          if (payloadData.new_balance !== undefined) {
-            setBalance(Number(payloadData.new_balance) || 0);
-          }
-        }
-
-        // Reconcile with server in background to ensure full, consistent view
-        loadClientAndPayments();
-      } catch (e) {
-        // ignore
-      }
-    };
-    window.addEventListener('account:updated', onAccountUpdated);
-      const onPaymentHistoryUpdated = (ev) => {
-        try {
-          const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          if (!parsed || !parsed.id) return;
-          const updatedClientId = ev?.detail?.clientId;
-          if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
-          const payment_history = ev?.detail?.payment_history;
-          if (payment_history) {
-            setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-            try {
-              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-            } catch (e) {}
-          }
-        } catch (e) {
-          // ignore
-        }
-      };
-      window.addEventListener('payment-history:updated', onPaymentHistoryUpdated);
+    // Remove legacy event listeners that are causing duplicate API calls
+    // const onAccountUpdated = (ev) => { ... };
+    // const onPaymentHistoryUpdated = (ev) => { ... };
 
     return () => {
       aborted = true;
-      // Close SSE connection
-      SSEService.disconnect(parsed.id);
-      window.removeEventListener("focus", onVis);
-      document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener('account:updated', onAccountUpdated);
-      window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
+      // Temporarily disable SSE cleanup
+      // SSEService.disconnect(parsed.id);
+      // Remove the window event listeners cleanup since we're not adding them
+      // window.removeEventListener("focus", onVis);
+      // document.removeEventListener("visibilitychange", onVis);
+      // window.removeEventListener('account:updated', onAccountUpdated);
+      // window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
     };
   }, [navigate]);
 
@@ -240,9 +196,22 @@ export default function Dashboard() {
         <SidePanel title="Top up" onClose={() => setPanelOpen(false)}>
           <TopupPanel
             onCancel={() => setPanelOpen(false)}
-            onSuccess={() => {
+            onSuccess={(result) => {
               setPanelOpen(false);
               setTopupPopupOpen(true);
+              
+              // Update local state with fresh data from localStorage and topup result
+              try {
+                const updatedUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+                
+                // Use the new_balance from the topup result if available
+                const newBalance = result?.result?.new_balance || updatedUser.balance;
+                
+                setUser(updatedUser);
+                setBalance(Number(newBalance) || 0);
+              } catch (e) {
+                console.error("Error updating local state after topup:", e);
+              }
             }}
           />
         </SidePanel>
