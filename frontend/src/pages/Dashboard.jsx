@@ -7,6 +7,7 @@ import TopupPanel from "../components/TopupPanel";
 import Popup from '../components/Popup';
 import "./Dashboard.css";
 import ApiService from "../services/api";
+import SSEService from "../services/sseService";
 
 // We'll derive today's totals from the recent_payment_history returned by the backend.
 const today = new Date().toISOString().slice(0, 10);
@@ -17,9 +18,6 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
-  
-  // Polling for balance updates
-  const POLLING_INTERVAL = 2500; // 5 seconds
 
   // Closes the popup and navigates to /dashboard
   function onTopupPopupClose() {
@@ -40,6 +38,57 @@ export default function Dashboard() {
 
     let aborted = false;
 
+    // Setup SSE connection for real-time updates
+    const handleSSEMessage = (data) => {
+      if (data.type === 'ping') {
+        // Keep-alive ping, ignore
+        return;
+      }
+      
+      if (data.type === 'balance_updated' && data.client_id === parsed.id) {
+        // Update balance immediately
+        setBalance(data.data.new_balance);
+        
+        // Update user data
+        setUser((prevUser) => ({
+          ...prevUser,
+          balance: data.data.new_balance
+        }));
+        
+        // Update localStorage
+        try {
+          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          localStorage.setItem("currentUser", JSON.stringify({
+            ...stored,
+            balance: data.data.new_balance
+          }));
+        } catch (e) {}
+        
+        // Refresh payment history after balance update
+        loadPaymentHistory();
+      }
+    };
+
+    const handleSSEError = (error) => {
+      console.error("SSE connection error:", error);
+    };
+
+    // Separate function to load payment history
+    async function loadPaymentHistory() {
+      if (aborted) return;
+      try {
+        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
+        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
+        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+        try {
+          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+        } catch (e) {}
+      } catch (e) {
+        console.error("Payment history load failed", e);
+      }
+    }
+
     // Fetch client info and today's payments once.
     async function loadClientAndPayments() {
       if (aborted) return;
@@ -55,54 +104,15 @@ export default function Dashboard() {
         console.error("Initial client load failed", e);
       }
 
-      try {
-        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-        try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-        } catch (e) {}
-      } catch (e) {
-        console.error("Payment history load failed", e);
-      }
+      await loadPaymentHistory();
     }
 
-    // run initial load and also when window regains focus or visibility changes
+    // Run initial load and setup SSE
     (async () => {
       await loadClientAndPayments();
+      // Setup SSE connection after initial load
+      SSEService.connect(parsed.id, handleSSEMessage, handleSSEError);
     })();
-
-    // Set up polling for balance and payment history updates
-    const pollingInterval = setInterval(async () => {
-      if (aborted) return;
-      try {
-        // Fetch fresh client data including balance
-        const fresh = await ApiService.getClient(parsed.id);
-        setBalance(Number(fresh.balance) || 0);
-        setUser((u) => ({ ...(u || {}), ...fresh }));
-        
-        // Update localStorage with fresh data
-        try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
-        } catch (e) {}
-        
-        // Fetch updated payment history
-        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-        
-        // Update localStorage with fresh payment history
-        try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-        } catch (e) {}
-        
-      } catch (e) {
-        console.error("Polling update failed", e);
-      }
-    }, POLLING_INTERVAL);
 
     const onVis = () => {
       loadClientAndPayments();
@@ -162,7 +172,8 @@ export default function Dashboard() {
 
     return () => {
       aborted = true;
-      clearInterval(pollingInterval);
+      // Close SSE connection
+      SSEService.disconnect(parsed.id);
       window.removeEventListener("focus", onVis);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener('account:updated', onAccountUpdated);

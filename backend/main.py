@@ -1,6 +1,8 @@
 import json
+import asyncio
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from src.config.database import get_db
@@ -15,12 +17,58 @@ from src.services.payment_reference import PaymentReferenceService
 from src.services.payment_history import PaymentHistoryService
 from pydantic import BaseModel
 from pydantic import PositiveFloat
-from typing import Optional, List
+from typing import Optional, List, Dict, Set
 from decimal import Decimal
 from datetime import datetime, timezone
 import secrets
+import queue
+import threading
 
 app = FastAPI()
+
+# Global notification system for SSE
+class NotificationManager:
+    def __init__(self):
+        self.subscribers: Dict[int, Set[queue.Queue]] = {}
+        self.lock = threading.Lock()
+    
+    def subscribe(self, client_id: int) -> queue.Queue:
+        """Subscribe a client to notifications"""
+        client_queue = queue.Queue()
+        with self.lock:
+            if client_id not in self.subscribers:
+                self.subscribers[client_id] = set()
+            self.subscribers[client_id].add(client_queue)
+        return client_queue
+    
+    def unsubscribe(self, client_id: int, client_queue: queue.Queue):
+        """Unsubscribe a client from notifications"""
+        with self.lock:
+            if client_id in self.subscribers:
+                self.subscribers[client_id].discard(client_queue)
+                if not self.subscribers[client_id]:
+                    del self.subscribers[client_id]
+    
+    def notify(self, client_id: int, event_type: str, data: dict):
+        """Send notification to all subscribers of a client"""
+        with self.lock:
+            if client_id in self.subscribers:
+                message = {
+                    "type": event_type,
+                    "client_id": client_id,
+                    "data": data,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                # Send to all queues for this client
+                for client_queue in self.subscribers[client_id].copy():
+                    try:
+                        client_queue.put_nowait(message)
+                    except queue.Full:
+                        # Remove full queues (client disconnected)
+                        self.subscribers[client_id].discard(client_queue)
+
+# Global notification manager instance
+notification_manager = NotificationManager()
 
 # Allow CORS for frontend connection
 app.add_middleware(
@@ -162,6 +210,39 @@ def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
     "admin": bool(user.admin),
     }
 
+@app.get("/api/events/{client_id}")
+async def get_events(client_id: int):
+    """Server-Sent Events endpoint for real-time notifications"""
+    
+    async def event_stream():
+        client_queue = notification_manager.subscribe(client_id)
+        try:
+            while True:
+                try:
+                    # Wait for a message with timeout
+                    message = client_queue.get(timeout=30)  # 30 second timeout
+                    yield f"data: {json.dumps(message)}\n\n"
+                except queue.Empty:
+                    # Send keepalive ping
+                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                except Exception as e:
+                    break
+        except asyncio.CancelledError:
+            pass
+        finally:
+            notification_manager.unsubscribe(client_id, client_queue)
+    
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control"
+        }
+    )
+
 @app.get("/api/client/{client_id}", response_model=UserResponse)
 def get_client(client_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == client_id).first()
@@ -211,6 +292,18 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
     account.balance = new_balance
     db.commit()
     db.refresh(account)
+
+    # Send real-time notification for topup
+    notification_manager.notify(
+        client_id,
+        "balance_updated",
+        {
+            "new_balance": float(new_balance),
+            "transaction_type": "topup",
+            "amount": float(transaction.amount),
+            "description": transaction.description or "Account top-up"
+        }
+    )
 
     balance_value = getattr(account, 'balance', 0)
     return {
@@ -318,6 +411,39 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
 
         db.refresh(tx)
         db.refresh(sender)
+        db.refresh(recipient)
+
+        # Send real-time notifications to both sender and recipient
+        sender_user = db.query(User).filter(User.id == sender.user_id).first()
+        recipient_user = db.query(User).filter(User.id == recipient.user_id).first()
+        
+        # Notify sender
+        if sender_user:
+            notification_manager.notify(
+                sender_user.id,
+                "balance_updated",
+                {
+                    "new_balance": float(sender.balance or Decimal("0")),
+                    "transaction_type": "sent",
+                    "amount": float(amount),
+                    "description": description,
+                    "recipient": recipient_user.name if recipient_user else "Unknown"
+                }
+            )
+        
+        # Notify recipient
+        if recipient_user:
+            notification_manager.notify(
+                recipient_user.id,
+                "balance_updated", 
+                {
+                    "new_balance": float(recipient.balance or Decimal("0")),
+                    "transaction_type": "received",
+                    "amount": float(amount),
+                    "description": description,
+                    "sender": sender_user.name if sender_user else "Unknown"
+                }
+            )
 
         return {
             "transaction_id": tx.id,
