@@ -9,14 +9,13 @@ variables:
   NODE_VERSION: "20"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
-# Cache disabled due to GitLab Artifact Registry being full (maintenance weekend)
-# cache:
-#   key:
-#     files:
-#       - frontend/package-lock.json
-#   paths:
-#     - frontend/node_modules/
-#     - .npm/
+cache:
+  key:
+    files:
+      - frontend/package-lock.json
+  paths:
+    - frontend/node_modules/
+    - .npm/
 
 # Run linting (disabled - will fix on separate branch later)
 # lint:
