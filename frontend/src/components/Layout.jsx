@@ -7,7 +7,8 @@ import { useSSE } from "../contexts/SSEContext";
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const { connectSSE, disconnectSSE } = useSSE();
+  const [hasConnected, setHasConnected] = useState(false);
+  const { connectSSE } = useSSE();
 
   useEffect(() => {
     const raw = localStorage.getItem("currentUser");
@@ -20,19 +21,15 @@ export default function Layout() {
       setUser(userData);
       
       // Establish global SSE connection for real-time updates across all pages
-      if (userData.id) {
+      if (userData.id && !hasConnected) {
         console.log("Layout: Establishing global SSE connection");
         connectSSE(userData.id);
+        setHasConnected(true);
       }
     } catch (_) {
       navigate("/login");
     }
-
-    // Cleanup SSE connection when component unmounts
-    return () => {
-      disconnectSSE();
-    };
-  }, [navigate]); // Remove connectSSE and disconnectSSE from dependencies
+  }, [navigate, connectSSE]);
 
   return (
     <div className="container">

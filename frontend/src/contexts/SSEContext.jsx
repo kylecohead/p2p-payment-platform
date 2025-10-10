@@ -1,5 +1,5 @@
 // Global SSE Context for real-time updates across all pages
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import SSEService from '../services/sseService';
 
 const SSEContext = createContext();
@@ -17,20 +17,44 @@ export const SSEProvider = ({ children }) => {
   const [lastMessage, setLastMessage] = useState(null);
   const [eventListeners, setEventListeners] = useState({});
   const [currentUserId, setCurrentUserId] = useState(null);
+  const connectionAttemptRef = useRef(false);
+  const eventListenersRef = useRef({});
+
+  // Handle page visibility changes to manage SSE connections
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && currentUserId && !isConnected) {
+        connectSSE(currentUserId);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentUserId, isConnected]);
 
   // Subscribe to specific event types
   const addEventListener = useCallback((eventType, callback) => {
-    setEventListeners(prev => ({
-      ...prev,
-      [eventType]: [...(prev[eventType] || []), callback]
-    }));
+    setEventListeners(prev => {
+      const newListeners = {
+        ...prev,
+        [eventType]: [...(prev[eventType] || []), callback]
+      };
+      eventListenersRef.current = newListeners; // Keep ref in sync
+      return newListeners;
+    });
 
     // Return cleanup function
     return () => {
-      setEventListeners(prev => ({
-        ...prev,
-        [eventType]: (prev[eventType] || []).filter(cb => cb !== callback)
-      }));
+      setEventListeners(prev => {
+        const newListeners = {
+          ...prev,
+          [eventType]: (prev[eventType] || []).filter(cb => cb !== callback)
+        };
+        eventListenersRef.current = newListeners; // Keep ref in sync
+        return newListeners;
+      });
     };
   }, []);
 
@@ -39,25 +63,23 @@ export const SSEProvider = ({ children }) => {
     if (!event.data) return;
 
     try {
-      console.log("Global SSE: Message received:", event.data);
       const data = JSON.parse(event.data);
-      
       setLastMessage(data);
 
       // Handle keepalive pings
       if (data.type === 'ping') {
-        console.log("Global SSE: Received keepalive ping");
         return;
       }
 
       // Handle shutdown signal
       if (data.type === 'shutdown') {
-        console.log("Global SSE: Server is shutting down, will reconnect automatically");
         return;
       }
 
-      // Dispatch to registered listeners
-      const listeners = eventListeners[data.type] || [];
+      // Use the ref to get current listeners (not stale closure)
+      const currentListeners = eventListenersRef.current;
+      const listeners = currentListeners[data.type] || [];
+      
       for (const listener of listeners) {
         try {
           await listener(data);
@@ -67,7 +89,7 @@ export const SSEProvider = ({ children }) => {
       }
 
       // Also dispatch to 'all' listeners
-      const allListeners = eventListeners['all'] || [];
+      const allListeners = currentListeners['all'] || [];
       for (const listener of allListeners) {
         try {
           await listener(data);
@@ -79,10 +101,22 @@ export const SSEProvider = ({ children }) => {
     } catch (error) {
       console.error("Global SSE: Error processing message:", error);
     }
-  }, [eventListeners]);
+  }, []); // Remove eventListeners dependency since we use ref
 
   const handleSSEError = useCallback((error) => {
     console.error("Global SSE: Connection error:", error);
+    
+    // Only mark as disconnected if the connection is actually closed
+    if (SSEService.eventSource?.readyState === 2) { // CLOSED
+      setIsConnected(false);
+    }
+  }, []);
+
+  // Disconnect SSE
+  const disconnectSSE = useCallback(() => {
+    connectionAttemptRef.current = false;
+    SSEService.disconnect();
+    setCurrentUserId(null);
     setIsConnected(false);
   }, []);
 
@@ -90,23 +124,51 @@ export const SSEProvider = ({ children }) => {
   const connectSSE = useCallback((userId) => {
     // Prevent duplicate connections for the same user
     if (currentUserId === userId && isConnected) {
-      console.log(`Global SSE: Already connected for user ${userId}`);
       return;
     }
 
-    console.log(`Global SSE: Connecting for user ${userId}`);
-    SSEService.connect(userId, handleSSEMessage, handleSSEError);
-    setCurrentUserId(userId);
-    setIsConnected(true);
-  }, [handleSSEMessage, handleSSEError, currentUserId, isConnected]);
+    // Prevent multiple simultaneous connection attempts
+    if (connectionAttemptRef.current) {
+      return;
+    }
 
-  // Disconnect SSE
-  const disconnectSSE = useCallback(() => {
-    console.log("Global SSE: Disconnecting");
-    SSEService.disconnect();
-    setCurrentUserId(null);
-    setIsConnected(false);
-  }, []);
+    connectionAttemptRef.current = true;
+
+    // Disconnect any existing connection first
+    if (currentUserId && currentUserId !== userId) {
+      SSEService.disconnect();
+      setIsConnected(false);
+      setCurrentUserId(null);
+    }
+    
+    // Small delay to ensure any previous connection is fully closed
+    setTimeout(() => {
+      try {
+        SSEService.connect(userId, handleSSEMessage, handleSSEError);
+        setCurrentUserId(userId);
+        setIsConnected(true);
+      } finally {
+        connectionAttemptRef.current = false;
+      }
+    }, 100);
+  }, [currentUserId, isConnected, handleSSEMessage, handleSSEError]);
+
+  // Handle page visibility changes to manage SSE connections
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Only reconnect if we had a user and the connection was lost
+      if (document.visibilityState === 'visible' && currentUserId && !isConnected) {
+        setTimeout(() => {
+          connectSSE(currentUserId);
+        }, 200);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentUserId, isConnected]); // Removed connectSSE to prevent recreating the handler
 
   const value = {
     isConnected,

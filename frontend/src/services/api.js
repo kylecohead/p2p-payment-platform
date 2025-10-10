@@ -106,6 +106,8 @@ class ApiService {
       throw new Error('Recipient email is required');
     }
 
+    console.log("ApiService: Sending money request", { clientId, amount, recipientEmail, description });
+
     const response = await fetch(`${API_BASE_URL}/api/send/${clientId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -121,14 +123,10 @@ class ApiService {
       throw new Error(error.detail || 'Send money failed');
     }
     const data = await response.json();
-    // Refresh payment history for client so UI shows the latest entries immediately
-    try {
-      const hist = await this.getPaymentHistory(clientId, 100);
-      const stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      localStorage.setItem('currentUser', JSON.stringify({ ...stored, ...data, recent_payment_history: hist.payment_history }));
-    } catch (e) {
-      // ignore history refresh errors
-    }
+    console.log("ApiService: Send money response", data);
+    
+    // Note: We don't immediately refresh payment history here anymore 
+    // to avoid race conditions with SSE notifications
     return data;
   }
 

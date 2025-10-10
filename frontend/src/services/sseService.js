@@ -21,13 +21,14 @@ class SSEService {
    */
   connect(clientId, onMessage, onError) {
     // Prevent multiple connections to the same client
-    if (this.eventSource && this.currentClientId === clientId) {
+    if (this.eventSource && this.currentClientId === clientId && this.isConnected) {
       console.log(`SSEService: Already connected to client ${clientId}`);
       return;
     }
 
     // Disconnect any existing connection
     if (this.eventSource) {
+      console.log(`SSEService: Disconnecting existing connection before new one`);
       this.disconnect();
     }
 
@@ -38,7 +39,7 @@ class SSEService {
     this.reconnectAttempts = 0;
     
     this.eventSource.onopen = () => {
-      console.log('SSEService: SSE connection opened');
+      console.log('SSEService: SSE connection opened successfully');
       this.isConnected = true;
       this.reconnectAttempts = 0;
     };
@@ -52,23 +53,30 @@ class SSEService {
     
     this.eventSource.onerror = (error) => {
       console.error('SSEService: SSE connection error:', error);
-      this.isConnected = false;
+      console.log('SSEService: EventSource readyState:', this.eventSource?.readyState);
       
-      if (onError) {
-        onError(error);
-      }
-      
-      // Auto-reconnect with exponential backoff
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-        console.log(`SSEService: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+      // Only handle reconnection if the connection is permanently closed
+      if (this.eventSource?.readyState === 2) { // CLOSED
+        this.isConnected = false;
         
-        setTimeout(() => {
-          this.reconnectAttempts++;
-          this.connect(clientId, onMessage, onError);
-        }, delay);
+        if (onError) {
+          onError(error);
+        }
+        
+        // Auto-reconnect with exponential backoff
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+          console.log(`SSEService: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+          
+          setTimeout(() => {
+            this.reconnectAttempts++;
+            this.connect(clientId, onMessage, onError);
+          }, delay);
+        } else {
+          console.error('SSEService: Max reconnection attempts reached');
+        }
       } else {
-        console.error('SSEService: Max reconnection attempts reached');
+        console.log('SSEService: Connection error but not closed, continuing...');
       }
     };
   }

@@ -32,40 +32,38 @@ export default function Dashboard() {
     if (!data) return;
     
     try {
-      console.log("Dashboard: SSE message received:", data);
-      
       // Handle keepalive pings
       if (data.type === 'ping') {
-        console.log("Dashboard: Received keepalive ping");
         return;
       }
       
       // Handle shutdown signal
       if (data.type === 'shutdown') {
-        console.log("Dashboard: Server is shutting down, will reconnect automatically");
         return;
       }
       
       // Handle balance updates
       if (data.type === 'balance_updated') {
-        console.log("Dashboard: Processing balance update:", data);
+        // Update balance immediately from the notification
+        if (data.data && typeof data.data.new_balance === 'number') {
+          setBalance(data.data.new_balance);
+        }
         
         // Trigger data reload
         setReloadTrigger(prev => prev + 1);
         
         // Show a notification to the user
-        if (data.transaction_type === 'received') {
-          console.log(`Received ${data.amount} from ${data.sender || 'someone'}`);
-        } else if (data.transaction_type === 'sent') {
-          console.log(`Sent ${data.amount} to ${data.recipient || 'someone'}`);
-        } else if (data.transaction_type === 'topup') {
-          console.log(`Account topped up with ${data.amount}`);
+        if (data.data.transaction_type === 'received') {
+          console.log(`Received ${data.data.amount} from ${data.data.sender || 'someone'}`);
+        } else if (data.data.transaction_type === 'sent') {
+          console.log(`Sent ${data.data.amount} to ${data.data.recipient || 'someone'}`);
+        } else if (data.data.transaction_type === 'topup') {
+          console.log(`Account topped up with ${data.data.amount}`);
         }
       }
       
       // Handle other notification types
       else if (data.type === 'payment_update') {
-        console.log("Dashboard: Processing payment update");
         setReloadTrigger(prev => prev + 1);
       }
       
@@ -113,11 +111,14 @@ export default function Dashboard() {
       try {
         const hist = await ApiService.getPaymentHistory(parsed.id, 100);
         const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-        try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-        } catch (e) {}
+        
+        if (!aborted) {
+          setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+          try {
+            const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+            localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+          } catch (e) {}
+        }
       } catch (e) {
         console.error("Payment history load failed", e);
       }
@@ -128,12 +129,15 @@ export default function Dashboard() {
       if (aborted) return;
       try {
         const fresh = await ApiService.getClient(parsed.id);
-        setBalance(Number(fresh.balance) || 0);
-        setUser((u) => ({ ...(u || {}), ...fresh }));
-        try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
-        } catch (e) {}
+        
+        if (!aborted) {
+          setBalance(Number(fresh.balance) || 0);
+          setUser((u) => ({ ...(u || {}), ...fresh }));
+          try {
+            const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+            localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
+          } catch (e) {}
+        }
       } catch (e) {
         console.error("Initial client load failed", e);
       }

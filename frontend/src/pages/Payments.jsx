@@ -18,14 +18,17 @@ export default function Payments() {
 
   const fetchPaymentHistory = async () => {
     try {
+      setLoading(true);
       const userData = JSON.parse(localStorage.getItem("currentUser"));
       if (!userData) {
         navigate("/login");
         return;
       }
 
+      console.log("Payments: Fetching payment history...");
       const response = await ApiService.getPaymentHistory(userData.id);
       setPayments(response.payment_history || []);
+      setError(""); // Clear any previous errors
     } catch (err) {
       console.error("Failed to fetch payment history:", err);
       setError("Failed to load payment history");
@@ -44,12 +47,12 @@ export default function Payments() {
     console.log("Payments: Setting up real-time payment updates");
     
     const handleBalanceUpdate = async (data) => {
-      console.log("Payments: Received balance update, refreshing payment history");
+      console.log("Payments: Received balance update, refreshing payment history", data);
       await fetchPaymentHistory();
     };
 
     const handlePaymentUpdate = async (data) => {
-      console.log("Payments: Received payment update, refreshing payment history");
+      console.log("Payments: Received payment update, refreshing payment history", data);
       await fetchPaymentHistory();
     };
 
@@ -57,8 +60,11 @@ export default function Payments() {
     const unsubscribeBalance = addEventListener('balance_updated', handleBalanceUpdate);
     const unsubscribePayment = addEventListener('payment_update', handlePaymentUpdate);
 
+    console.log("Payments: Event listeners set up");
+
     // Cleanup subscriptions
     return () => {
+      console.log("Payments: Cleaning up event listeners");
       unsubscribeBalance();
       unsubscribePayment();
     };
