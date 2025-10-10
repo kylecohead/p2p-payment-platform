@@ -79,8 +79,11 @@ class NotificationManager:
         if self._shutdown:
             return  # Don't send notifications during shutdown
             
+        print(f"NotificationManager: Attempting to notify client {client_id} with event {event_type}")
+        
         async with self.lock:
             if client_id in self.subscribers:
+                print(f"NotificationManager: Found {len(self.subscribers[client_id])} subscribers for client {client_id}")
                 message = {
                     "type": event_type,
                     "client_id": client_id,
@@ -92,13 +95,18 @@ class NotificationManager:
                 for client_queue in self.subscribers[client_id].copy():
                     try:
                         await client_queue.put(message)
-                    except Exception:
+                        print(f"NotificationManager: Successfully sent notification to client {client_id}")
+                    except Exception as e:
                         # Mark queue for removal (client disconnected)
+                        print(f"NotificationManager: Failed to send to client {client_id}: {e}")
                         dead_queues.append(client_queue)
                 
                 # Remove dead queues
                 for dead_queue in dead_queues:
                     self.subscribers[client_id].discard(dead_queue)
+            else:
+                print(f"NotificationManager: No subscribers found for client {client_id}")
+                print(f"NotificationManager: Current subscribers: {list(self.subscribers.keys())}")
     
     async def shutdown(self):
         """Shutdown notification manager and close all connections"""
@@ -297,6 +305,7 @@ async def get_events(client_id: int):
                         print(f"SSE client {client_id} received shutdown signal")
                         break
                         
+                    print(f"SSE: Sending message to client {client_id}: {message.get('type')}")
                     yield f"data: {json.dumps(message)}\n\n"
                 except asyncio.TimeoutError:
                     # Send keepalive ping every 1 second and check shutdown
@@ -509,10 +518,16 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
         sender_user = db.query(User).filter(User.id == sender.user_id).first()
         recipient_user = db.query(User).filter(User.id == recipient.user_id).first()
         
+        print(f"Transaction completed: Sender user {sender_user.id if sender_user else 'None'}, Recipient user {recipient_user.id if recipient_user else 'None'}")
+        
+        # Create notification tasks but don't await them to avoid blocking
+        notification_tasks = []
+        
         # Notify sender
         if sender_user:
-            try:
-                await notification_manager.notify(
+            print(f"Preparing notification for sender {sender_user.id}")
+            notification_tasks.append(
+                notification_manager.notify(
                     sender_user.id,
                     "balance_updated",
                     {
@@ -520,16 +535,17 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
                         "transaction_type": "sent",
                         "amount": float(amount),
                         "description": description,
-                        "recipient": recipient_user.name if recipient_user else "Unknown"
+                        "recipient": recipient_user.name if recipient_user else "Unknown",
+                        "transaction_id": tx.id
                     }
                 )
-            except Exception as e:
-                print(f"Notification error for sender: {e}")
+            )
         
-        # Notify recipient
+        # Notify recipient  
         if recipient_user:
-            try:
-                await notification_manager.notify(
+            print(f"Preparing notification for recipient {recipient_user.id}")
+            notification_tasks.append(
+                notification_manager.notify(
                     recipient_user.id,
                     "balance_updated", 
                     {
@@ -537,11 +553,19 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
                         "transaction_type": "received",
                         "amount": float(amount),
                         "description": description,
-                        "sender": sender_user.name if sender_user else "Unknown"
+                        "sender": sender_user.name if sender_user else "Unknown",
+                        "transaction_id": tx.id
                     }
                 )
-            except Exception as e:
-                print(f"Notification error for recipient: {e}")
+            )
+
+        # Execute notifications in background
+        try:
+            print(f"Executing {len(notification_tasks)} notification tasks")
+            await asyncio.gather(*notification_tasks, return_exceptions=True)
+            print("Notifications sent successfully")
+        except Exception as e:
+            print(f"Notification error: {e}")
 
         return {
             "transaction_id": tx.id,
@@ -587,6 +611,27 @@ def remove_block(block_id: int, db: Session = Depends(get_db)):
     if not b: raise HTTPException(status_code=404, detail="Block not found")
     if b.removed_at is None: b.removed_at = datetime.now(timezone.utc); db.commit()
     return {"ok": True}
+
+@app.post("/api/debug/test-notification/{client_id}")
+async def test_notification(client_id: int):
+    """Test endpoint to send a test notification"""
+    try:
+        await notification_manager.notify(
+            client_id,
+            "test_message",
+            {"message": "This is a test notification", "timestamp": datetime.now(timezone.utc).isoformat()}
+        )
+        return {"status": "sent", "client_id": client_id}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.get("/api/debug/sse-connections")
+def debug_sse_connections():
+    """Debug endpoint to see current SSE connections"""
+    return {
+        "subscribers": {str(k): len(v) for k, v in notification_manager.subscribers.items()},
+        "total_connections": sum(len(v) for v in notification_manager.subscribers.values())
+    }
 
 @app.get("/api/payment-history/{client_id}")
 def get_payment_history(client_id: int, limit: int = 100, db: Session = Depends(get_db)):
