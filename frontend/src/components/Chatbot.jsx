@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Chatbot.css";
+import SafePayBot from "./TurtleMascot";
 
 /**
  * Chatbot Component
@@ -236,6 +237,30 @@ Remember: You help regular users navigate the platform. You know nothing about a
   // ==================== EVENT HANDLERS ====================
 
   /**
+   * Auto-resize textarea as user types
+   */
+  const handleInputChange = (e) => {
+    const textarea = e.target;
+    setInput(textarea.value);
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = "auto";
+
+    // Set height based on content, max 3 lines
+    const lineHeight = 1.5; // em
+    const padding = 1.5; // rem (0.75rem top + 0.75rem bottom)
+    const maxLines = 3;
+    const maxHeight = lineHeight * maxLines + padding;
+
+    const newHeight = Math.min(
+      textarea.scrollHeight / 16, // Convert px to rem (assuming 16px base)
+      maxHeight
+    );
+
+    textarea.style.height = `${newHeight}rem`;
+  };
+
+  /**
    * Handles form submission when user types a custom question
    */
   const handleSubmit = async (e) => {
@@ -244,6 +269,13 @@ Remember: You help regular users navigate the platform. You know nothing about a
 
     const userMessage = input.trim();
     setInput("");
+
+    // Reset textarea height
+    const textarea = e.target.querySelector("textarea");
+    if (textarea) {
+      textarea.style.height = "auto";
+    }
+
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setLoading(true);
 
@@ -301,7 +333,12 @@ Remember: You help regular users navigate the platform. You know nothing about a
         <div className="chatbot-window">
           {/* Header with title and close button */}
           <div className="chatbot-header">
-            <h3>SafePay+ Assistant</h3>
+            <div className="chatbot-header-content">
+              <div className="chatbot-robot">
+                <SafePayBot isPasswordFocused={false} showPassword={false} />
+              </div>
+              <h3>Chat with Rob</h3>
+            </div>
             <button
               className="chatbot-close"
               onClick={() => setIsOpen(false)}
@@ -349,12 +386,18 @@ Remember: You help regular users navigate the platform. You know nothing about a
 
           {/* Input form for custom questions */}
           <form className="chatbot-input-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
+            <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
               placeholder="Ask me anything..."
               disabled={loading}
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
             />
             <button type="submit" disabled={loading || !input.trim()}>
               Send

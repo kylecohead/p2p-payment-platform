@@ -91,6 +91,18 @@ html[data-theme="dark"] .chatbot-window {
   align-items: center;
 }
 
+.chatbot-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chatbot-robot {
+  transform: scale(0.5);
+  transform-origin: center;
+  margin: -20px -10px -20px -15px;
+}
+
 .chatbot-header h3 {
   margin: 0;
   font-size: 1rem;
@@ -262,9 +274,10 @@ html[data-theme="dark"] .chatbot-window {
   border-top: 1px solid var(--border);
   background: var(--surface);
   border-radius: 0 0 16px 16px;
+  align-items: flex-end;
 }
 
-.chatbot-input-form input {
+.chatbot-input-form textarea {
   flex: 1;
   padding: 0.75rem;
   border: 1px solid var(--border);
@@ -272,9 +285,16 @@ html[data-theme="dark"] .chatbot-window {
   font-size: 0.9rem;
   background: var(--surface-raised);
   color: var(--text-primary);
+  font-family: inherit;
+  resize: none;
+  min-height: 42px;
+  max-height: calc(1.5em * 3 + 1.5rem);
+  line-height: 1.5em;
+  overflow-y: auto;
+  transition: max-height 0.2s ease;
 }
 
-.chatbot-input-form input:focus {
+.chatbot-input-form textarea:focus {
   outline: none;
   border-color: var(--primary);
 }
