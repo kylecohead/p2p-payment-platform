@@ -4,6 +4,7 @@ import "./Admin.css";
 import { examplePayments } from "./egPay";
 import SidePanel from "../components/SidePanel";
 import SendPanel from "../components/SendPanel";
+import TransactionPanel from "../components/TransactionPanel";
 import ApiService from "../services/api";
 
 export default function Admin() {
@@ -88,8 +89,8 @@ export default function Admin() {
               return (
                 <tr
                   key={p.code}
-                  onClick={handleAdminAction} // Call function on row click
-                  style={{ cursor: "pointer" }} // Optional: show pointer cursor
+                  onClick={handleAdminAction}
+                  style={{ cursor: "pointer" }}
                 >
                   <td>{p.code}</td>
                   <td className={statusClass}>{p.status}</td>
@@ -114,10 +115,13 @@ export default function Admin() {
 
       {/* Send success popup */}
       {panelOpen && (
-      <SidePanel title="New payment" onClose={() => setPanelOpen(false)}>
-        <SendPanel
-          onCancel={() => setPanelOpen(false)}
-          onSuccess={() => {
+      <SidePanel title="Payment" onClose={() => setPanelOpen(false)}>
+        <TransactionPanel
+          onClose={() => setPanelOpen(false)}
+          onBlockSender={() => {
+            setPanelOpen(false);
+          }}
+          onBlockReceiver={() => {
             setPanelOpen(false);
           }}
         />
