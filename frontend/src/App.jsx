@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import Admin from './pages/Admin';
 import Popup from './components/Popup';
 import NotFound from "./pages/NotFound";
+import Restricted from "./pages/Restricted";
 import './App.css'
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       {/* Page not found */}
       <Route path="*" element={<NotFound />} />
+      {/* Restricted access */}
+      <Route path="/restricted" element={<Restricted />} />
       {/* Authenticated shell */}
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<Dashboard />} />
