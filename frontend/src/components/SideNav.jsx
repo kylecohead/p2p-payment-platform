@@ -1,13 +1,35 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
-
-const navItems = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/payments", label: "Payments" },
-  { to: "/admin", label: "Admin Panel" },
-];
+import React, { useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function SideNav({ theme, onThemeToggle }) {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [navItems, setNavItems] = useState([]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("currentUser");
+    if (!raw) {
+      navigate("/login");
+      return;
+    }
+    try {
+      const parsedUser = JSON.parse(raw);
+      setUser(parsedUser);
+
+      // Set nav items based on role
+      if (parsedUser?.admin === true) {
+        setNavItems([{ to: "/admin", label: "Admin Panel" }]);
+      } else {
+        setNavItems([
+          { to: "/dashboard", label: "Dashboard" },
+          { to: "/payments", label: "Payments" },
+        ]);
+      }
+    } catch (_) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   return (
     <nav className="sidePanel">
       <ul>
