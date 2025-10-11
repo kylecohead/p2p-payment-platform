@@ -7,7 +7,7 @@ import Send from "./pages/Send";
 import Payments from './pages/Payments';
 import Layout from './components/Layout';
 import Admin from './pages/Admin';
-import Popup from './components/Popup';
+import Beneficiaries from './pages/Beneficiaries';
 import NotFound from "./pages/NotFound";
 import './App.css'
 
@@ -26,6 +26,7 @@ function App() {
         <Route path="/payments" element={<Payments />} />
         <Route path="/send" element={<Send />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/beneficiaries" element={<Beneficiaries />} />
       </Route>
     </Routes>
   )
