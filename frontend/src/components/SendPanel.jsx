@@ -1,12 +1,20 @@
 import React, { useState } from "react";
 import ApiService from "../services/api";
 
-export default function SendPanel({ onSuccess, onCancel }) {
-  const [recipientEmail, setRecipientEmail] = useState("");
+export default function SendPanel({
+  onSuccess,
+  onCancel,
+  recipientEmail: initialRecipientEmail = "",
+}) {
+  const [recipientEmail, setRecipientEmail] = useState(initialRecipientEmail);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  React.useEffect(() => {
+    setRecipientEmail(initialRecipientEmail);
+  }, [initialRecipientEmail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
