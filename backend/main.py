@@ -1,6 +1,8 @@
 import json
+import asyncio
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from src.config.database import get_db
@@ -10,17 +12,137 @@ from src.services.auth import AuthService
 from src.models.transaction import Transaction
 from src.models.alert import Alert
 from src.models.block import Block, BlockType
+from src.models.beneficiary import Beneficiary
 from src.services.rules import RuleEngine
 from src.services.payment_reference import PaymentReferenceService
 from src.services.payment_history import PaymentHistoryService
 from pydantic import BaseModel
 from pydantic import PositiveFloat
-from typing import Optional, List
+from typing import Optional, List, Dict, Set
 from decimal import Decimal
 from datetime import datetime, timezone
 import secrets
+import asyncio
+import weakref
 
-app = FastAPI()
+import signal
+import asyncio
+from contextlib import asynccontextmanager, redirect_stderr
+import logging
+import warnings
+import sys
+import os
+from io import StringIO
+
+# Suppress specific warnings 
+warnings.filterwarnings("ignore", message="Valid config keys have changed in V2")
+
+# Context manager to suppress stderr during shutdown
+@asynccontextmanager
+async def suppress_shutdown_errors():
+    """Temporarily suppress stderr to hide shutdown error traces"""
+    old_stderr = sys.stderr
+    try:
+        sys.stderr = StringIO()  # Capture stderr instead of printing
+        yield
+    finally:
+        sys.stderr = old_stderr
+
+# Global notification system for SSE - using async queues instead of threading
+class NotificationManager:
+    def __init__(self):
+        self.subscribers: Dict[int, Set[asyncio.Queue]] = {}
+        self.lock = asyncio.Lock()
+        self._shutdown = False
+    
+    async def subscribe(self, client_id: int) -> asyncio.Queue:
+        """Subscribe a client to notifications"""
+        if self._shutdown:
+            raise ConnectionError("Server is shutting down")
+            
+        client_queue = asyncio.Queue()
+        async with self.lock:
+            if client_id not in self.subscribers:
+                self.subscribers[client_id] = set()
+            self.subscribers[client_id].add(client_queue)
+        return client_queue
+    
+    async def unsubscribe(self, client_id: int, client_queue: asyncio.Queue):
+        """Unsubscribe a client from notifications"""
+        async with self.lock:
+            if client_id in self.subscribers:
+                self.subscribers[client_id].discard(client_queue)
+                if not self.subscribers[client_id]:
+                    del self.subscribers[client_id]
+    
+    async def notify(self, client_id: int, event_type: str, data: dict):
+        """Send notification to all subscribers of a client"""
+        if self._shutdown:
+            return  # Don't send notifications during shutdown
+            
+        print(f"NotificationManager: Attempting to notify client {client_id} with event {event_type}")
+        
+        async with self.lock:
+            if client_id in self.subscribers:
+                print(f"NotificationManager: Found {len(self.subscribers[client_id])} subscribers for client {client_id}")
+                message = {
+                    "type": event_type,
+                    "client_id": client_id,
+                    "data": data,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                # Send to all queues for this client
+                dead_queues = []
+                for client_queue in self.subscribers[client_id].copy():
+                    try:
+                        await client_queue.put(message)
+                        print(f"NotificationManager: Successfully sent notification to client {client_id}")
+                    except Exception as e:
+                        # Mark queue for removal (client disconnected)
+                        print(f"NotificationManager: Failed to send to client {client_id}: {e}")
+                        dead_queues.append(client_queue)
+                
+                # Remove dead queues
+                for dead_queue in dead_queues:
+                    self.subscribers[client_id].discard(dead_queue)
+            else:
+                print(f"NotificationManager: No subscribers found for client {client_id}")
+                print(f"NotificationManager: Current subscribers: {list(self.subscribers.keys())}")
+    
+    async def shutdown(self):
+        """Shutdown notification manager and close all connections"""
+        print("NotificationManager: Starting shutdown...")
+        self._shutdown = True
+        
+        async with self.lock:
+            # Send shutdown signal to all queues
+            for client_id, queues in self.subscribers.items():
+                for queue in queues:
+                    try:
+                        await queue.put({"type": "shutdown"})
+                    except Exception as e:
+                        print(f"Error sending shutdown signal to client {client_id}: {e}")
+            
+            # Give a moment for messages to be processed
+            await asyncio.sleep(0.1)
+            
+            # Clear all subscribers
+            self.subscribers.clear()
+            print("NotificationManager: Shutdown complete")
+
+# Global notification manager instance
+notification_manager = NotificationManager()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Starting up...")
+    yield
+    # Shutdown
+    print("Shutting down...")
+    await notification_manager.shutdown()
+
+app = FastAPI(lifespan=lifespan)
 
 # Allow CORS for frontend connection
 app.add_middleware(
@@ -162,6 +284,63 @@ def signup(signup_data: UserCreate, db: Session = Depends(get_db)):
     "admin": bool(user.admin),
     }
 
+@app.get("/api/events/{client_id}")
+async def get_events(client_id: int):
+    """Server-Sent Events endpoint for real-time notifications"""
+    
+    async def event_stream():
+        try:
+            client_queue = await notification_manager.subscribe(client_id)
+        except ConnectionError:
+            # Server is shutting down
+            return
+            
+        try:
+            while not notification_manager._shutdown:
+                try:
+                    # Wait for a message with very short timeout (1s) for fastest shutdown
+                    message = await asyncio.wait_for(client_queue.get(), timeout=1.0)
+                    
+                    # Handle shutdown signal
+                    if message.get("type") == "shutdown":
+                        print(f"SSE client {client_id} received shutdown signal")
+                        break
+                        
+                    print(f"SSE: Sending message to client {client_id}: {message.get('type')}")
+                    yield f"data: {json.dumps(message)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keepalive ping every 1 second and check shutdown
+                    if not notification_manager._shutdown:
+                        yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now(timezone.utc).isoformat()})}\n\n"
+                    else:
+                        # Shutdown detected during timeout, break immediately
+                        break
+                except asyncio.CancelledError:
+                    print(f"SSE client {client_id} connection cancelled")
+                    break
+                except Exception as e:
+                    print(f"SSE error for client {client_id}: {e}")
+                    break
+        except asyncio.CancelledError:
+            print(f"SSE client {client_id} outer cancelled")
+        finally:
+            try:
+                await notification_manager.unsubscribe(client_id, client_queue)
+                print(f"SSE client {client_id} disconnected")
+            except:
+                pass
+    
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive", 
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control"
+        }
+    )
+
 @app.get("/api/client/{client_id}", response_model=UserResponse)
 def get_client(client_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == client_id).first()
@@ -191,7 +370,7 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
     }
 
 @app.post("/api/topup/{client_id}")
-def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
+async def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
     # interpret client_id as user_id and top up the user's first account
     user = db.query(User).filter(User.id == client_id).first()
     if not user:
@@ -212,6 +391,22 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
     db.commit()
     db.refresh(account)
 
+    # Send real-time notification for topup
+    try:
+        await notification_manager.notify(
+            client_id,
+            "balance_updated",
+            {
+                "new_balance": float(new_balance),
+                "transaction_type": "topup",
+                "amount": float(transaction.amount),
+                "description": transaction.description or "Account top-up"
+            }
+        )
+    except Exception as e:
+        # Don't let notification errors block the topup
+        print(f"Notification error: {e}")
+
     balance_value = getattr(account, 'balance', 0)
     return {
         "message": f"Successfully topped up {transaction.amount}",
@@ -220,7 +415,7 @@ def topup_balance(client_id: int, transaction: TransactionCreate, db: Session = 
 
 # Delegate requests to /api/transfers
 @app.post("/api/send/{client_id}")
-def send_money(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
+async def send_money(client_id: int, transaction: TransactionCreate, db: Session = Depends(get_db)):
     if not transaction.recipient_email:
         raise HTTPException(status_code=400, detail="Recipient email required")
     sender_account = db.query(Account).filter(Account.user_id == client_id).first()
@@ -235,10 +430,10 @@ def send_money(client_id: int, transaction: TransactionCreate, db: Session = Dep
     payload = TransferIn(sender_account_id=sender_account.id, recipient_account_id=recipient_account.id,
                          amount=transaction.amount, reference=transaction.reference, method="p2p", 
                          description=transaction.description or "Payment transfer")
-    return create_transfer(payload, db)
+    return await create_transfer(payload, db)
 
 @app.post("/api/transfers")
-def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
+async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
     amount = Decimal(str(payload.amount))
 
     # Lock both accounts in a deterministic order to avoid deadlocks
@@ -271,7 +466,7 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             for a in alerts:
                 db.add(a)
             db.commit()     
-            message = ", ".join(violations)
+            message = "Violations: " + ", ".join(violations)
             raise HTTPException(status_code=409, detail=message)
 
         # Allowed: move funds + create transaction atomically under the same lock
@@ -318,6 +513,91 @@ def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
 
         db.refresh(tx)
         db.refresh(sender)
+        db.refresh(recipient)
+
+        # Send real-time notifications to both sender and recipient
+        sender_user = db.query(User).filter(User.id == sender.user_id).first()
+        recipient_user = db.query(User).filter(User.id == recipient.user_id).first()
+        
+        print(f"Transaction completed: Sender user {sender_user.id if sender_user else 'None'}, Recipient user {recipient_user.id if recipient_user else 'None'}")
+        
+        # Create notification tasks but don't await them to avoid blocking
+        notification_tasks = []
+        
+        # Notify sender
+        if sender_user:
+            print(f"Preparing notification for sender {sender_user.id}")
+            notification_tasks.append(
+                notification_manager.notify(
+                    sender_user.id,
+                    "balance_updated",
+                    {
+                        "new_balance": float(sender.balance or Decimal("0")),
+                        "transaction_type": "sent",
+                        "amount": float(amount),
+                        "description": description,
+                        "recipient": recipient_user.name if recipient_user else "Unknown",
+                        "transaction_id": tx.id
+                    }
+                )
+            )
+        
+        # Notify recipient  
+        if recipient_user:
+            print(f"Preparing notification for recipient {recipient_user.id}")
+            notification_tasks.append(
+                notification_manager.notify(
+                    recipient_user.id,
+                    "balance_updated", 
+                    {
+                        "new_balance": float(recipient.balance or Decimal("0")),
+                        "transaction_type": "received",
+                        "amount": float(amount),
+                        "description": description,
+                        "sender": sender_user.name if sender_user else "Unknown",
+                        "transaction_id": tx.id
+                    }
+                )
+            )
+
+        # Execute notifications in background
+        try:
+            print(f"Executing {len(notification_tasks)} notification tasks")
+            await asyncio.gather(*notification_tasks, return_exceptions=True)
+            print("Notifications sent successfully")
+        except Exception as e:
+            print(f"Notification error: {e}")
+
+        #when sender pays recipient for the first time, add to beneficiaries table
+        try:
+            # Check if beneficiary already exists for the sender's user
+            sender_user = db.query(User).filter(User.id == sender.user_id).first()
+            recipient_user_obj = db.query(User).filter(User.id == recipient.user_id).first()
+            if sender_user and recipient_user_obj:
+                exists = db.query(Beneficiary).filter(
+                    Beneficiary.owner_user_id == sender_user.id,
+                    Beneficiary.recipient_user_id == recipient_user_obj.id
+                ).first()
+                if not exists:
+                    b = Beneficiary(
+                        owner_user_id=sender_user.id,
+                        recipient_user_id=recipient_user_obj.id,
+                        name=recipient_user_obj.name,
+                        email=recipient_user_obj.email,
+                        account_id=recipient.id,
+                        account_number=getattr(recipient, 'account_number', None)
+                    )
+                    db.add(b)
+                    db.commit()
+                else:
+                    # update last_used_at and usage_count
+                    exists.last_used_at = datetime.now(timezone.utc)
+                    exists.usage_count = (exists.usage_count or 0) + 1
+                    db.add(exists)
+                    db.commit()
+        except Exception as e:
+            # non-fatal - beneficiary upsert failure shouldn't break transfer
+            print(f"Warning: beneficiary upsert failed: {e}")
 
         return {
             "transaction_id": tx.id,
@@ -364,6 +644,27 @@ def remove_block(block_id: int, db: Session = Depends(get_db)):
     if b.removed_at is None: b.removed_at = datetime.now(timezone.utc); db.commit()
     return {"ok": True}
 
+@app.post("/api/debug/test-notification/{client_id}")
+async def test_notification(client_id: int):
+    """Test endpoint to send a test notification"""
+    try:
+        await notification_manager.notify(
+            client_id,
+            "test_message",
+            {"message": "This is a test notification", "timestamp": datetime.now(timezone.utc).isoformat()}
+        )
+        return {"status": "sent", "client_id": client_id}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.get("/api/debug/sse-connections")
+def debug_sse_connections():
+    """Debug endpoint to see current SSE connections"""
+    return {
+        "subscribers": {str(k): len(v) for k, v in notification_manager.subscribers.items()},
+        "total_connections": sum(len(v) for v in notification_manager.subscribers.values())
+    }
+
 @app.get("/api/payment-history/{client_id}")
 def get_payment_history(client_id: int, limit: int = 100, db: Session = Depends(get_db)):
     """Get payment history for a client's account."""
@@ -388,6 +689,31 @@ def get_payment_history(client_id: int, limit: int = 100, db: Session = Depends(
             "error": str(e)
         }
 
+
+@app.get("/api/beneficiaries/{client_id}")
+def list_beneficiaries(client_id: int, db: Session = Depends(get_db)):
+    """List beneficiaries for a given user (client_id is user.id)."""
+    # Ensure user exists
+    user = db.query(User).filter(User.id == client_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    ben_list = db.query(Beneficiary).filter(Beneficiary.owner_user_id == client_id).order_by(Beneficiary.last_used_at.desc()).all()
+    out = []
+    for b in ben_list:
+        out.append({
+            "id": b.id,
+            "name": b.name,
+            "email": b.email,
+            "account_id": b.account_id,
+            "account_number": b.account_number,
+            "nickname": b.nickname,
+            "last_used_at": getattr(b.last_used_at, 'isoformat', lambda: None)(),
+            "usage_count": b.usage_count or 0,
+        })
+
+    return {"beneficiaries": out, "total_count": len(out)}
+
 if __name__ == "__main__":
     import uvicorn
     import os
@@ -398,4 +724,21 @@ if __name__ == "__main__":
     port = int(os.getenv("API_PORT", 8000))
 
     print(f"Starting server on {host}:{port}")
-    uvicorn.run(app, host=host, port=port)
+    
+    # Run with uvicorn directly and handle shutdown more gracefully
+    try:
+        uvicorn.run(
+            app, 
+            host=host, 
+            port=port,
+            access_log=True,
+            log_level="info",
+            timeout_keep_alive=2,
+            timeout_graceful_shutdown=1
+        )
+    except KeyboardInterrupt:
+        print("Server shutdown complete.")
+    except Exception as e:
+        print(f"Server error: {e}")
+    finally:
+        print("Cleanup finished.")

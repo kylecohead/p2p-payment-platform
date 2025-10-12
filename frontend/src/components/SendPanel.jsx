@@ -18,6 +18,8 @@ export default function SendPanel({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Clear any previous errors
+    
     try {
       const userData = JSON.parse(localStorage.getItem("currentUser"));
       if (!userData) {
@@ -25,19 +27,29 @@ export default function SendPanel({
         return;
       }
 
-      await ApiService.sendMoney(
+      console.log("SendPanel: Sending money...", { amount, recipientEmail, description });
+      
+      // Send the money
+      const result = await ApiService.sendMoney(
         userData.id,
         amount,
         recipientEmail,
         description
       );
 
+      console.log("SendPanel: Payment successful", result);
+
+      // Update local user data with fresh information
       const updatedUser = await ApiService.getClient(userData.id);
       localStorage.setItem("currentUser", JSON.stringify(updatedUser));
 
-      setSubmitted(true);
-      onSuccess?.({ amount, recipientEmail });
+      // Small delay to allow backend SSE notifications to be sent
+      setTimeout(() => {
+        setSubmitted(true);
+        onSuccess?.({ amount, recipientEmail, result });
+      }, 100);
     } catch (err) {
+      console.error("SendPanel: Payment failed", err);
       setError(err.message || "Send failed. Please try again.");
     }
   };

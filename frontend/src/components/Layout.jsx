@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import TopBar from "./TopBar";
 import SideNav from "./SideNav";
+import { useSSE } from "../contexts/SSEContext";
 import Chatbot from "./Chatbot";
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [hasConnected, setHasConnected] = useState(false);
+  const { connectSSE } = useSSE();
   const [theme, setTheme] = useState(() => {
     // Initialize theme from localStorage or default to light
     return localStorage.getItem("theme") || "light";
