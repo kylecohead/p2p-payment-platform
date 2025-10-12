@@ -1,12 +1,13 @@
 // Dashboard page
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import TopupPanel from "../components/TopupPanel";
 import Popup from '../components/Popup';
 import "./Dashboard.css";
 import ApiService from "../services/api";
+import { useSSE } from "../contexts/SSEContext";
 
 // We'll derive today's totals from the recent_payment_history returned by the backend.
 const today = new Date().toISOString().slice(0, 10);
@@ -17,16 +18,61 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [topupPopupOpen, setTopupPopupOpen] = useState(false);
-  
-  // Polling for balance updates
-  const POLLING_INTERVAL = 2500; // 5 seconds
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  const { addEventListener } = useSSE();
 
-  // Closes the popup and navigates to /dashboard
+  // Closes the popup
   function onTopupPopupClose() {
     setTopupPopupOpen(false);
-    window.location.reload();
+    // No need to reload since data is updated in real-time
   }
 
+  // Memoized SSE message handler
+  const handleSSEMessage = useCallback(async (data) => {
+    if (!data) return;
+    
+    try {
+      // Handle keepalive pings
+      if (data.type === 'ping') {
+        return;
+      }
+      
+      // Handle shutdown signal
+      if (data.type === 'shutdown') {
+        return;
+      }
+      
+      // Handle balance updates
+      if (data.type === 'balance_updated') {
+        // Update balance immediately from the notification
+        if (data.data && typeof data.data.new_balance === 'number') {
+          setBalance(data.data.new_balance);
+        }
+        
+        // Trigger data reload
+        setReloadTrigger(prev => prev + 1);
+        
+        // Show a notification to the user
+        if (data.data.transaction_type === 'received') {
+          console.log(`Received ${data.data.amount} from ${data.data.sender || 'someone'}`);
+        } else if (data.data.transaction_type === 'sent') {
+          console.log(`Sent ${data.data.amount} to ${data.data.recipient || 'someone'}`);
+        } else if (data.data.transaction_type === 'topup') {
+          console.log(`Account topped up with ${data.data.amount}`);
+        }
+      }
+      
+      // Handle other notification types
+      else if (data.type === 'payment_update') {
+        setReloadTrigger(prev => prev + 1);
+      }
+      
+    } catch (error) {
+      console.error("Dashboard: Error processing SSE message:", error);
+    }
+  }, []);
+
+  // Initial load effect
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
@@ -37,138 +83,75 @@ export default function Dashboard() {
     const parsed = JSON.parse(userData);
     setUser(parsed);
     setBalance(Number(parsed.balance) || 0);
+  }, [navigate]);
+
+  // SSE listeners effect  
+  useEffect(() => {
+    // Setup global SSE event listeners and store cleanup functions
+    const balanceCleanup = addEventListener('balance_updated', handleSSEMessage);
+    const paymentCleanup = addEventListener('payment_update', handleSSEMessage);
+
+    return () => {
+      // Clean up event listeners
+      if (balanceCleanup) balanceCleanup();
+      if (paymentCleanup) paymentCleanup();
+    };
+  }, [addEventListener, handleSSEMessage]);
+
+  // Data loading effect (triggered by reloadTrigger)
+  useEffect(() => {
+    const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    if (!parsed || !parsed.id) return;
 
     let aborted = false;
+
+    // Separate function to load payment history
+    async function loadPaymentHistory() {
+      if (aborted) return;
+      try {
+        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
+        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
+        
+        if (!aborted) {
+          setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
+          try {
+            const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
+            localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.error("Payment history load failed", e);
+      }
+    }
 
     // Fetch client info and today's payments once.
     async function loadClientAndPayments() {
       if (aborted) return;
       try {
         const fresh = await ApiService.getClient(parsed.id);
-        setBalance(Number(fresh.balance) || 0);
-        setUser((u) => ({ ...(u || {}), ...fresh }));
-        try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
-        } catch (e) {}
+        
+        if (!aborted) {
+          setBalance(Number(fresh.balance) || 0);
+          setUser((u) => ({ ...(u || {}), ...fresh }));
+          try {
+            const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+            localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
+          } catch (e) {}
+        }
       } catch (e) {
         console.error("Initial client load failed", e);
       }
 
-      try {
-        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-        try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-        } catch (e) {}
-      } catch (e) {
-        console.error("Payment history load failed", e);
-      }
+      await loadPaymentHistory();
     }
 
-    // run initial load and also when window regains focus or visibility changes
-    (async () => {
-      await loadClientAndPayments();
-    })();
-
-    // Set up polling for balance and payment history updates
-    const pollingInterval = setInterval(async () => {
-      if (aborted) return;
-      try {
-        // Fetch fresh client data including balance
-        const fresh = await ApiService.getClient(parsed.id);
-        setBalance(Number(fresh.balance) || 0);
-        setUser((u) => ({ ...(u || {}), ...fresh }));
-        
-        // Update localStorage with fresh data
-        try {
-          const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored, ...fresh }));
-        } catch (e) {}
-        
-        // Fetch updated payment history
-        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-        
-        // Update localStorage with fresh payment history
-        try {
-          const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-        } catch (e) {}
-        
-      } catch (e) {
-        console.error("Polling update failed", e);
-      }
-    }, POLLING_INTERVAL);
-
-    const onVis = () => {
-      loadClientAndPayments();
-    };
-    window.addEventListener("focus", onVis);
-    document.addEventListener("visibilitychange", onVis);
-    // Listen for account updates (fired after send/topup/getClient)
-    const onAccountUpdated = (ev) => {
-      try {
-        const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
-        if (!parsed || !parsed.id) return;
-        const updatedClientId = ev?.detail?.clientId;
-        // If event doesn't include clientId, always proceed; otherwise only proceed for matching id
-        if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
-
-        // If the event payload includes recent_payment_history or new_balance, apply it immediately
-        const payloadData = ev?.detail?.data;
-        if (payloadData) {
-          if (payloadData.recent_payment_history) {
-            setUser((u) => ({ ...(u || {}), recent_payment_history: payloadData.recent_payment_history }));
-            try {
-              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payloadData.recent_payment_history }));
-            } catch (e) {}
-          }
-          if (payloadData.new_balance !== undefined) {
-            setBalance(Number(payloadData.new_balance) || 0);
-          }
-        }
-
-        // Reconcile with server in background to ensure full, consistent view
-        loadClientAndPayments();
-      } catch (e) {
-        // ignore
-      }
-    };
-    window.addEventListener('account:updated', onAccountUpdated);
-      const onPaymentHistoryUpdated = (ev) => {
-        try {
-          const parsed = JSON.parse(localStorage.getItem("currentUser") || "{}");
-          if (!parsed || !parsed.id) return;
-          const updatedClientId = ev?.detail?.clientId;
-          if (updatedClientId && Number(updatedClientId) !== Number(parsed.id)) return;
-          const payment_history = ev?.detail?.payment_history;
-          if (payment_history) {
-            setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-            try {
-              const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-              localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-            } catch (e) {}
-          }
-        } catch (e) {
-          // ignore
-        }
-      };
-      window.addEventListener('payment-history:updated', onPaymentHistoryUpdated);
+    // Run data loading
+    loadClientAndPayments();
 
     return () => {
       aborted = true;
-      clearInterval(pollingInterval);
-      window.removeEventListener("focus", onVis);
-      document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener('account:updated', onAccountUpdated);
-      window.removeEventListener('payment-history:updated', onPaymentHistoryUpdated);
     };
-  }, [navigate]);
+  }, [reloadTrigger]); // Trigger reload when SSE messages are received
 
   // derive payments from the user's recent_payment_history; show only today's payments
   const recentPayments = (user && user.recent_payment_history) || [];
@@ -229,9 +212,22 @@ export default function Dashboard() {
         <SidePanel title="Top up" onClose={() => setPanelOpen(false)}>
           <TopupPanel
             onCancel={() => setPanelOpen(false)}
-            onSuccess={() => {
+            onSuccess={(result) => {
               setPanelOpen(false);
               setTopupPopupOpen(true);
+              
+              // Update local state with fresh data from localStorage and topup result
+              try {
+                const updatedUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+                
+                // Use the new_balance from the topup result if available
+                const newBalance = result?.result?.new_balance || updatedUser.balance;
+                
+                setUser(updatedUser);
+                setBalance(Number(newBalance) || 0);
+              } catch (e) {
+                console.error("Error updating local state after topup:", e);
+              }
             }}
           />
         </SidePanel>

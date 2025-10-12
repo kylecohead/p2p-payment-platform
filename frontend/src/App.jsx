@@ -9,25 +9,28 @@ import Layout from './components/Layout';
 import Admin from './pages/Admin';
 import Popup from './components/Popup';
 import NotFound from "./pages/NotFound";
+import { SSEProvider } from './contexts/SSEContext';
 import './App.css'
 
 function App() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={<LandingPage />} />
-      {/* Page not found */}
-      <Route path="*" element={<NotFound />} />
-      {/* Authenticated shell */}
-      <Route element={<Layout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/topup" element={<Topup />} />
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/send" element={<Send />} />
-        <Route path="/admin" element={<Admin />} />
-      </Route>
-    </Routes>
+    <SSEProvider>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<LandingPage />} />
+        {/* Page not found */}
+        <Route path="*" element={<NotFound />} />
+        {/* Authenticated shell */}
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/topup" element={<Topup />} />
+          <Route path="/payments" element={<Payments />} />
+          <Route path="/send" element={<Send />} />
+          <Route path="/admin" element={<Admin />} />
+        </Route>
+      </Routes>
+    </SSEProvider>
   )
 }
 

@@ -5,6 +5,7 @@ import SendPanel from "../components/SendPanel";
 import Popup from '../components/Popup';
 import "./Payments.css";
 import ApiService from "../services/api";
+import { useSSE } from "../contexts/SSEContext";
 
 export default function Payments() {
   const navigate = useNavigate();
@@ -13,34 +14,66 @@ export default function Payments() {
   const [error, setError] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [sendPopupOpen, setSendPopupOpen] = useState(false);
+  const { addEventListener } = useSSE();
+
+  const fetchPaymentHistory = async () => {
+    try {
+      setLoading(true);
+      const userData = JSON.parse(localStorage.getItem("currentUser"));
+      if (!userData) {
+        navigate("/login");
+        return;
+      }
+
+      console.log("Payments: Fetching payment history...");
+      const response = await ApiService.getPaymentHistory(userData.id);
+      setPayments(response.payment_history || []);
+      setError(""); // Clear any previous errors
+    } catch (err) {
+      console.error("Failed to fetch payment history:", err);
+      setError("Failed to load payment history");
+      setPayments([]); // Fallback to empty array
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPaymentHistory = async () => {
-      try {
-        const userData = JSON.parse(localStorage.getItem("currentUser"));
-        if (!userData) {
-          navigate("/login");
-          return;
-        }
-
-        const response = await ApiService.getPaymentHistory(userData.id);
-        setPayments(response.payment_history || []);
-      } catch (err) {
-        console.error("Failed to fetch payment history:", err);
-        setError("Failed to load payment history");
-        setPayments([]); // Fallback to empty array
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPaymentHistory();
   }, [navigate]);
 
-  // Closes the popup and navigates to /dashboard
+  // Set up real-time updates for payments
+  useEffect(() => {
+    console.log("Payments: Setting up real-time payment updates");
+    
+    const handleBalanceUpdate = async (data) => {
+      console.log("Payments: Received balance update, refreshing payment history", data);
+      await fetchPaymentHistory();
+    };
+
+    const handlePaymentUpdate = async (data) => {
+      console.log("Payments: Received payment update, refreshing payment history", data);
+      await fetchPaymentHistory();
+    };
+
+    // Subscribe to balance and payment updates
+    const unsubscribeBalance = addEventListener('balance_updated', handleBalanceUpdate);
+    const unsubscribePayment = addEventListener('payment_update', handlePaymentUpdate);
+
+    console.log("Payments: Event listeners set up");
+
+    // Cleanup subscriptions
+    return () => {
+      console.log("Payments: Cleaning up event listeners");
+      unsubscribeBalance();
+      unsubscribePayment();
+    };
+  }, [addEventListener]);
+
+  // Closes the popup and refreshes data (no page reload needed - real-time updates)
   function onSendPopupClose() {
     setSendPopupOpen(false);
-    window.location.reload();
+    // No need to reload page - real-time updates will handle it
   }
 
   const handleNewPayment = () => {
