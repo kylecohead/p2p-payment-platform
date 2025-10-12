@@ -16,5 +16,5 @@
 
 .notfound-message {
   font-size: 1.2rem;
-  color: black;
+  color: var(--text-primary);
 }

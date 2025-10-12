@@ -8,21 +8,24 @@ export default function TopupPanel({ onSuccess, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
       const userData = JSON.parse(localStorage.getItem("currentUser"));
+      
       if (!userData) {
         onCancel?.();
         return;
       }
 
-      await ApiService.topupBalance(userData.id, amount);
+      const result = await ApiService.topupBalance(userData.id, amount);
 
-      const updatedUser = await ApiService.getClient(userData.id);
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-
+      // The topupBalance method already updates localStorage with fresh data
+      // so we don't need to call getClient again
+      
       setSubmitted(true);
-      onSuccess?.({ amount });
+      onSuccess?.({ amount, result });
     } catch (err) {
+      console.error("TopupPanel: Error during topup:", err);
       setError("Topup failed. Please try again.");
     }
   };

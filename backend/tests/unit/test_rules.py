@@ -55,10 +55,8 @@ def test_amount_over_limit():
     allowed, alerts, violations = RuleEngine.evaluate(
         db, sender=s, recipient=r, amount=Decimal(AMOUNT_LIMIT) + 1
     )
-    # auto block for sprint 2
-    assert allowed is not True
+    assert allowed is True # should be allowed, just an alert
     assert any(getattr(a, "code", "") == "AMOUNT_LIMIT" for a in alerts)
-    assert "AMOUNT_TOO_LARGE" in violations
 
 
 def test_daily_limit_alert():
@@ -67,9 +65,8 @@ def test_daily_limit_alert():
     allowed, alerts, violations = RuleEngine.evaluate(
         db, sender=s, recipient=r, amount=Decimal("600")
     )
-    assert not allowed # should be blocked
+    assert allowed is True # should be allowed, just an alert
     assert any(getattr(a, "code", "") == "DAILY_LIMIT" for a in alerts)
-    assert "DAILY_AMOUNT_LIMIT_EXCEEDED" in violations  
 
 def test_negative_balance():
     db = DummyDB()
@@ -78,7 +75,7 @@ def test_negative_balance():
         db, sender=s, recipient=r, amount=Decimal("1")
     )
     assert not allowed
-    assert "NEGATIVE_BAL" in violations
+    assert "Transfer would result in a negative balance" in violations
 
 def test_zero_balance():
     db = DummyDB()
@@ -88,8 +85,7 @@ def test_zero_balance():
         db, sender=s, recipient=r, amount=Decimal("1000")
     )
 
-    assert not allowed  # The transaction should not be allowed
-    assert "ZERO_BAL" in violations  # The violation should be listed
+    assert allowed is True  # The transaction should be allowed
     assert any(getattr(a, "code", "") == "ZERO_BAL" for a in alerts)  # There should be an alert
 
 def test_allowed_transaction():
@@ -127,8 +123,7 @@ def test_burst_limit_with_actual_transactions():
     )
 
     # Assert that the transaction is **not allowed** because there are more than 3 transactions sin the last 60s
-    assert not allowed  # The transaction should be blocked due to burst limit
-    assert "TOO_MANY_TRANSACTIONS_60S" in violations  # Violation should be present
+    assert allowed is True # The transaction should be allowed but with an alert
     assert any(getattr(a, "code", "") == "BURSTING_60S" for a in alerts)  # Alert should be generated
 
 

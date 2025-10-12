@@ -1,0 +1,20 @@
+.restricted-container {
+    width: 100vw;
+    padding: 3rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.restricted-title {
+  font-size: 2.5rem;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.restricted-message {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
