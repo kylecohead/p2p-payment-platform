@@ -9,8 +9,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
-  const [hasConnected, setHasConnected] = useState(false);
-  const { connectSSE } = useSSE();
+  const { connectSSE, disconnectSSE } = useSSE();
   const [theme, setTheme] = useState(() => {
     // Initialize theme from localStorage or default to light
     return localStorage.getItem("theme") || "light";
@@ -41,6 +40,20 @@ export default function Layout() {
       navigate("/login");
     }
   }, [navigate, location]);
+
+  // Connect to SSE when user is loaded
+  useEffect(() => {
+    if (user?.user_id) {
+      connectSSE(user.user_id);
+    }
+
+    // Cleanup: disconnect SSE when component unmounts or user changes
+    return () => {
+      if (user?.user_id) {
+        disconnectSSE();
+      }
+    };
+  }, [user?.user_id, connectSSE, disconnectSSE]);
 
   useEffect(() => {
     // Apply theme to document root
