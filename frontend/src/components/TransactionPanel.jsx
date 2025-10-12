@@ -1,84 +1,101 @@
-import React, { useState } from "react";
+import React from "react";
+import "./TransactionPanel.css";
 
 export default function TransactionPanel({
   onClose,
   onBlockSender,
   onBlockReceiver,
 }) {
-  // Hardcoded transaction details for now
+  // Updated hardcoded transaction details
   const transaction = {
-    id: "TX123456",
+    code: "TX123456",
+    status: "Flagged",
+    description: "Lunch payment",
+    time: "14:23",
+    date: "2024-06-01",
+    name: "SJ",
+    amount: 42.5,
     sender: {
       name: "SJ",
       email: "sj@gmail.com",
+      blocked: false,
     },
     receiver: {
       name: "Kyle",
       email: "kyle@gmail.com",
+      blocked: true,
     },
-    amount: 42.5,
     currency: "ZAR",
-    date: "2024-06-01 14:23",
-    description: "Lunch payment",
-    status: "Completed",
   };
 
-  const [blocked, setBlocked] = useState(null);
-
   const handleBlockSender = () => {
-    setBlocked("sender");
-    onBlockSender?.(transaction.sender);
+    // Backend team
   };
 
   const handleBlockReceiver = () => {
-    setBlocked("receiver");
-    onBlockReceiver?.(transaction.receiver);
+    // Backend team
   };
 
   return (
-    <div>
+    <div className="transaction-panel">
       <h2>Transaction Details</h2>
       <div>
-        <strong>ID:</strong> {transaction.id}
-      </div>
-      <div>
-        <strong>Date:</strong> {transaction.date}
+        <strong>Code:</strong> {transaction.code}
       </div>
       <div>
         <strong>Status:</strong> {transaction.status}
       </div>
       <div>
-        <strong>Amount:</strong> R{transaction.amount} {transaction.currency}
-      </div>
-      <div>
         <strong>Description:</strong> {transaction.description}
       </div>
-      <hr />
       <div>
-        <strong>Sender:</strong> {transaction.sender.name} (
-        {transaction.sender.email})
+        <strong>Time:</strong> {transaction.time}
       </div>
       <div>
-        <strong>Receiver:</strong> {transaction.receiver.name} (
-        {transaction.receiver.email})
+        <strong>Date:</strong> {transaction.date}
       </div>
+      <div>
+        <strong>Name:</strong> {transaction.name}
+      </div>
+      <div>
+        <strong>Amount:</strong> R{transaction.amount} {transaction.currency}
+      </div>
+      <hr className="transaction-panel-divider" />
+        <div className="transaction-user-section">
+          <div>
+            <strong>Sender:</strong> {transaction.sender.name} (
+            {transaction.sender.email})
+          </div>
+          <button
+            className={
+              transaction.sender.blocked
+                ? "unblock-btn"
+                : "block-btn"
+            }
+            type="button"
+            onClick={handleBlockSender}
+          >
+            {transaction.sender.blocked ? "Unblock User" : "Block User"}
+          </button>
+        </div>
+        <div className="transaction-user-section">
+          <div>
+            <strong>Receiver:</strong> {transaction.receiver.name} (
+            {transaction.receiver.email})
+          </div>
+          <button
+            className={
+              transaction.receiver.blocked
+                ? "unblock-btn"
+                : "block-btn"
+            }
+            type="button"
+            onClick={handleBlockReceiver}
+          >
+            {transaction.receiver.blocked ? "Unblock User" : "Block User"}
+          </button>
+        </div>
       <div className="row mt-4">
-        <button
-          className="btn btn-danger"
-          type="button"
-          onClick={handleBlockSender}
-          disabled={blocked === "sender"}
-        >
-          {blocked === "sender" ? "Sender Blocked" : "Block Sender"}
-        </button>
-        <button
-          className="btn btn-danger"
-          type="button"
-          onClick={handleBlockReceiver}
-          disabled={blocked === "receiver"}
-        >
-          {blocked === "receiver" ? "Receiver Blocked" : "Block Receiver"}
-        </button>
         <button className="btn btn-outline" type="button" onClick={onClose}>
           Close
         </button>
