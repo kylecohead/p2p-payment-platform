@@ -1,4 +1,4 @@
-.notfound-container {
+.restricted-container {
     width: 100vw;
     padding: 3rem 1rem;
     display: flex;
@@ -8,13 +8,13 @@
     margin: 0 auto;
 }
 
-.notfound-title {
+.restricted-title {
   font-size: 2.5rem;
   color: var(--primary);
   margin-bottom: 1rem;
 }
 
-.notfound-message {
+.restricted-message {
   font-size: 1.2rem;
   color: var(--text-primary);
 }
