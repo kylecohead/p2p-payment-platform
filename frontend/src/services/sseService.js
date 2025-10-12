@@ -2,7 +2,7 @@
  * Server-Sent Events (SSE) service for real-time updates
  */
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "100.102.145.100";
 
 class SSEService {
   constructor() {
