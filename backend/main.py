@@ -2,6 +2,7 @@ import json
 import asyncio
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -16,6 +17,7 @@ from src.models.beneficiary import Beneficiary
 from src.services.rules import RuleEngine
 from src.services.payment_reference import PaymentReferenceService
 from src.services.payment_history import PaymentHistoryService
+from src.services.csv_export import CSVExportService
 from pydantic import BaseModel
 from pydantic import PositiveFloat
 from typing import Optional, List, Dict, Set
@@ -643,6 +645,67 @@ def remove_block(block_id: int, db: Session = Depends(get_db)):
     if not b: raise HTTPException(status_code=404, detail="Block not found")
     if b.removed_at is None: b.removed_at = datetime.now(timezone.utc); db.commit()
     return {"ok": True}
+
+# Helper function to check admin status
+def check_admin_user(user_id: int, db: Session) -> bool:
+    # Check if user has admin privileges
+    user = db.query(User).filter(User.id == user_id).first()
+    return user and user.admin
+
+@app.get("/api/admin/export-flagged-payments")
+def export_flagged_payments_csv(
+    user_id: int, 
+    include_cleared: bool = False, 
+    db: Session = Depends(get_db)
+):
+    # Export flagged payments to CSV file. Requires admin privileges
+    # Check admin privileges
+    if not check_admin_user(user_id, db):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    
+    try:
+        csv_content = CSVExportService.export_flagged_payments_simple(db, include_cleared)
+        
+        # Return CSV as file download
+        headers = {
+            'Content-Disposition': 'attachment; filename="flagged_payments.csv"',
+            'Content-Type': 'text/csv'
+        }
+        
+        return Response(
+            content=csv_content,
+            media_type='text/csv',
+            headers=headers
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export CSV: {str(e)}")
+
+@app.get("/api/admin/export-active-blocks")
+def export_active_blocks_csv(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    # Export active blocks to CSV file. Requires admin privileges
+    # Check admin privileges
+    if not check_admin_user(user_id, db):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    
+    try:
+        csv_content = CSVExportService.export_active_blocks(db)
+        
+        # Return CSV as file download
+        headers = {
+            'Content-Disposition': 'attachment; filename="active_blocks.csv"',
+            'Content-Type': 'text/csv'
+        }
+        
+        return Response(
+            content=csv_content,
+            media_type='text/csv', 
+            headers=headers
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export CSV: {str(e)}")
 
 @app.post("/api/debug/test-notification/{client_id}")
 async def test_notification(client_id: int):
