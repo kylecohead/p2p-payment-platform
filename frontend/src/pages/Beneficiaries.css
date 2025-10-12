@@ -1,0 +1,31 @@
+.beneficiaries-table-container {
+  margin-top: 1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
+}
+
+.beneficiaries-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.beneficiaries-table th {
+  background: var(--surface);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
+}
+
+.beneficiaries-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
