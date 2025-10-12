@@ -15,8 +15,8 @@ def test_csv_export():
     print("=== Testing CSV Export Functionality ===")
     
     # First, login as an admin user (assuming alice is admin for testing)
-    admin_email = "alice@gmail.com" 
-    admin_password = "password123"
+    admin_email = "admin@example.local" 
+    admin_password = "AdminPass1$"
     
     try:
         # Step 1: Login as admin
