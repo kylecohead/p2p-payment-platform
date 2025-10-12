@@ -1,5 +1,4 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..config.database import SPBase
@@ -22,8 +21,8 @@ class Beneficiary(SPBase):
     account_number = Column(String(64), nullable=True)
     nickname = Column(String(64), nullable=True)
 
-    created_at = Column(func.now())
-    last_used_at = Column(func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
     usage_count = Column(Integer, nullable=False, server_default="0")
 
     owner = relationship("User", foreign_keys=[owner_user_id], backref="beneficiaries")
