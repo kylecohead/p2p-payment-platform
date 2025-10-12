@@ -23,6 +23,7 @@ export default function SideNav({ theme, onThemeToggle }) {
         setNavItems([
           { to: "/dashboard", label: "Dashboard" },
           { to: "/payments", label: "Payments" },
+          { to: "/beneficiaries", label: "Beneficiaries" },
         ]);
       }
     } catch (_) {

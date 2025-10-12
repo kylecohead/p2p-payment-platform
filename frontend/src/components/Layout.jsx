@@ -26,7 +26,7 @@ export default function Layout() {
       // Restrict admin from /dashboard or /payments
       if (
         parsedUser?.admin === true &&
-        (location.pathname === "/dashboard" || location.pathname === "/payments")
+        (location.pathname === "/dashboard" || location.pathname === "/payments" || location.pathname === "/beneficiaries")
       ) {
         navigate("/restricted", { replace: true });
       }
