@@ -29,3 +29,8 @@
   padding: 1rem;
   border-bottom: 1px solid var(--gray-200);
 }
+
+.beneficiaries-table tr:hover {
+  background: var(--surface);
+  transition: background-color var(--transition-speed) ease;
+}
