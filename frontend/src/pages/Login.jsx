@@ -45,7 +45,13 @@ export default function Login() {
     try {
       const userData = await ApiService.login(email, password);
       localStorage.setItem("currentUser", JSON.stringify(userData));
-      navigate("/dashboard");
+      
+      if (userData.admin) {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
+      
     } catch (err) {
       setError("Sign in failed. Please check your credentials.");
     }
