@@ -45,18 +45,18 @@ test:
     - npm ci --cache .npm --prefer-offline
     - npm run test:ci
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
-  # Artifacts disabled due to registry being full
-  # artifacts:
-  #   when: always
-  #   reports:
-  #     coverage_report:
-  #       coverage_format: cobertura
-  #       path: frontend/coverage/cobertura-coverage.xml
-  #     junit:
-  #       - frontend/coverage/junit.xml
-  #   paths:
-  #     - frontend/coverage/
-  #   expire_in: 30 days
+  # Upload coverage reports and test artifacts so they are visible in CI
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: frontend/coverage/cobertura-coverage.xml
+      junit:
+        - frontend/coverage/junit.xml
+    paths:
+      - frontend/coverage/
+    expire_in: 30 days
   only:
     - merge_requests
     - main
@@ -75,10 +75,10 @@ build:
     - npm ci --cache .npm --prefer-offline
     - npm run build
   # Artifacts disabled due to registry being full
-  # artifacts:
-  #   paths:
-  #     - frontend/dist/
-  #   expire_in: 1 week
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 week
   only:
     - merge_requests
     - main

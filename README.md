@@ -22,10 +22,11 @@
 
 ```bash
 cd frontend
-npm test              # Watch mode
-npm run test:ci       # Run once with coverage
-npm run test:ui       # Visual UI
-npm run test:watch    # Watch mode (alias)
+npm test                 # Watch mode
+npm run test:ci          # Run once with coverage
+npm run test:ui          # Visual UI
+npm run test:watch       # Watch mode (alias)
+npm run coverage:check   # Run coverage and enforce thresholds
 ```
 
 ### GitLab CI/CD Pipeline
