@@ -10,8 +10,8 @@ import ApiService from "../services/api";
 export default function Admin() {
   const navigate = useNavigate();
   const [panelOpen, setPanelOpen] = useState(false);
-
-
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  
   // Replace with real data
   const payments = examplePayments;
 
@@ -89,7 +89,10 @@ export default function Admin() {
               return (
                 <tr
                   key={p.code}
-                  onClick={handleAdminAction}
+                  onClick={() => {
+                    setSelectedTransaction(p);
+                    handleAdminAction();
+                  }}
                   style={{ cursor: "pointer" }}
                 >
                   <td>{p.code}</td>
@@ -124,9 +127,11 @@ export default function Admin() {
           onBlockReceiver={() => {
             setPanelOpen(false);
           }}
+          transactionDetails={selectedTransaction}
         />
       </SidePanel>
       )}
     </div>
   );
 }
+

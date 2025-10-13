@@ -25,7 +25,7 @@
 
 .block-btn:hover {
   transform: translateY(-2px);
-  border: 3px solid #d41515;
+  border: 3px solid var(--error);
   background-color: var(--error);
 }
 
@@ -41,7 +41,7 @@
 
 .unblock-btn:hover {
   transform: translateY(-2px);
-  border: 3px solid #1ceb01;
+  border: 3px solid var(--success);
   background-color: var(--success);
 }
 

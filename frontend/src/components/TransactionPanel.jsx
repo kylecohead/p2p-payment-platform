@@ -5,6 +5,7 @@ export default function TransactionPanel({
   onClose,
   onBlockSender,
   onBlockReceiver,
+  transactionDetails,
 }) {
   // Updated hardcoded transaction details
   const transaction = {
@@ -40,25 +41,25 @@ export default function TransactionPanel({
     <div className="transaction-panel">
       <h2>Transaction Details</h2>
       <div>
-        <strong>Code:</strong> {transaction.code}
+        <strong>Code:</strong> {transactionDetails.code}
       </div>
       <div>
-        <strong>Status:</strong> {transaction.status}
+        <strong>Status:</strong> {transactionDetails.status}
       </div>
       <div>
-        <strong>Description:</strong> {transaction.description}
+        <strong>Description:</strong> {transactionDetails.description}
       </div>
       <div>
-        <strong>Time:</strong> {transaction.time}
+        <strong>Time:</strong> {transactionDetails.time}
       </div>
       <div>
-        <strong>Date:</strong> {transaction.date}
+        <strong>Date:</strong> {transactionDetails.date}
       </div>
       <div>
-        <strong>Name:</strong> {transaction.name}
+        <strong>Name:</strong> {transactionDetails.name}
       </div>
       <div>
-        <strong>Amount:</strong> R{transaction.amount} {transaction.currency}
+        <strong>Amount:</strong> R{transactionDetails.amount} {transaction.currency}
       </div>
       <hr className="transaction-panel-divider" />
         <div className="transaction-user-section">
