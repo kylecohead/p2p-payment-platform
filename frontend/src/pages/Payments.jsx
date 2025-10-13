@@ -15,6 +15,8 @@ export default function Payments() {
   const [error, setError] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [sendPopupOpen, setSendPopupOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("date_time");
+  const [sortOrder, setSortOrder] = useState("desc"); // "asc" or "desc"
   const { addEventListener } = useSSE();
 
   const fetchPaymentHistory = async () => {
@@ -81,6 +83,32 @@ export default function Payments() {
     setPanelOpen(true);
   };
 
+  // Sorting logic
+  function getSortedPayments() {
+    const sorted = [...payments];
+    sorted.sort((a, b) => {
+      if (sortBy === "date_time") {
+        const aDT = new Date(`${a.date}T${a.time}`);
+        const bDT = new Date(`${b.date}T${b.time}`);
+        return sortOrder === "asc" ? aDT - bDT : bDT - aDT;
+      }
+      if (sortBy === "amount") {
+        return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount;
+      }
+      if (sortBy === "name") {
+        const aName = (a.name || "").toLowerCase();
+        const bName = (b.name || "").toLowerCase();
+        if (aName < bName) return sortOrder === "asc" ? -1 : 1;
+        if (aName > bName) return sortOrder === "asc" ? 1 : -1;
+        return 0;
+      }
+      return 0;
+    });
+    return sorted;
+  }
+
+  const sortedPayments = getSortedPayments();
+
   // Calculate totals
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const credits = payments.filter((p) => p.type === "Credit");
@@ -142,6 +170,46 @@ export default function Payments() {
             </div>
           </div>
 
+          {/* Sort buttons */}
+          <div className="payments-sort-buttons">
+            <button
+              className={`sort-btn${sortBy === "date_time" ? " active" : ""}`}
+              onClick={() =>
+                setSortBy("date_time") ||
+                setSortOrder(sortBy === "date_time" && sortOrder === "desc" ? "asc" : "desc")
+              }
+            >
+              Date/Time
+              {sortBy === "date_time" ? (
+                <span>{sortOrder === "asc" ? " ▲" : " ▼"}</span>
+              ) : null}
+            </button>
+            <button
+              className={`sort-btn${sortBy === "amount" ? " active" : ""}`}
+              onClick={() =>
+                setSortBy("amount") ||
+                setSortOrder(sortBy === "amount" && sortOrder === "desc" ? "asc" : "desc")
+              }
+            >
+              Amount
+              {sortBy === "amount" ? (
+                <span>{sortOrder === "asc" ? " ▲" : " ▼"}</span>
+              ) : null}
+            </button>
+            <button
+              className={`sort-btn${sortBy === "name" ? " active" : ""}`}
+              onClick={() =>
+                setSortBy("name") ||
+                setSortOrder(sortBy === "name" && sortOrder === "desc" ? "asc" : "desc")
+              }
+            >
+              Name
+              {sortBy === "name" ? (
+                <span>{sortOrder === "asc" ? " ▲" : " ▼"}</span>
+              ) : null}
+            </button>
+          </div>
+
           <div className="payments-table-container">
             {payments.length === 0 ? (
               <div
@@ -164,7 +232,7 @@ export default function Payments() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((p, idx) => (
+                  {sortedPayments.map((p, idx) => (
                     <tr key={p.code || idx}>
                       <td>{p.code}</td>
                       <td>{p.type}</td>

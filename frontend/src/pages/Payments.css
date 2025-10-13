@@ -58,3 +58,28 @@
   padding: 1rem;
   border-bottom: 1px solid var(--gray-200);
 }
+
+.payments-sort-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+}
+
+.sort-btn {
+  background: var(--surface);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.sort-btn.active,
+.sort-btn:hover {
+  background: var(--gray-100);
+  border-color: var(--primary);
+  color: var(--primary);
+}
