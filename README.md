@@ -41,7 +41,7 @@ The project also features a chatbot assistant named **Rob** with a security-firs
 
 The SafePay+ application is built around two core functional pillars: secure P2P payments and real-time fraud monitoring.
 
-### 1. Real-Time Fraud Monitoring (Rule Engine) 🚨
+### 1. Real-Time Fraud Monitoring (Rule Engine)
 
 [cite_start]The rule engine is designed to flag potentially unusual or risky transaction behavior in real time[cite: 19]. [cite_start]It applies five simple heuristics to each outgoing transfer[cite: 20]:
 
@@ -51,7 +51,7 @@ The SafePay+ application is built around two core functional pillars: secure P2P
 - [cite_start]**Daily Limit:** Flagged if the total amount sent for the day exceeds **R10000**[cite: 27].
 - [cite_start]Alerts are displayed via an **inline banner** on the user dashboard and persisted in an `Alerts` table for administrative review[cite: 36].
 
-### 2. Admin Control Panel (Protected Route) 🛡️
+### 2. Admin Control Panel (Protected Route)
 
 [cite_start]The dedicated admin panel supports efficient oversight and allows for immediate fraud prevention actions[cite: 17, 29]:
 
