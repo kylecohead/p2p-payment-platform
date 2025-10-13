@@ -57,3 +57,8 @@
   padding: 1rem;
   border-bottom: 1px solid var(--gray-200);
 }
+
+.admin-table tr:hover {
+  background: var(--surface);
+  transition: background-color var(--transition-speed) ease;
+}
