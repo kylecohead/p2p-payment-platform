@@ -1,10 +1,16 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import { examplePayments } from "./egPay";
+import SidePanel from "../components/SidePanel";
+import SendPanel from "../components/SendPanel";
+import TransactionPanel from "../components/TransactionPanel";
+import ApiService from "../services/api";
 
 export default function Admin() {
   const navigate = useNavigate();
+  const [panelOpen, setPanelOpen] = useState(false);
+
 
   // Replace with real data
   const payments = examplePayments;
@@ -12,6 +18,10 @@ export default function Admin() {
   const handleExport = () => {
     // TODO: Backend export functionality
     alert("Export functionality coming soon");
+  };
+
+  const handleAdminAction = () => {
+    setPanelOpen(true);
   };
 
   // Calculate totals
@@ -77,7 +87,11 @@ export default function Admin() {
                   : "";
 
               return (
-                <tr key={p.code}>
+                <tr
+                  key={p.code}
+                  onClick={handleAdminAction}
+                  style={{ cursor: "pointer" }}
+                >
                   <td>{p.code}</td>
                   <td className={statusClass}>{p.status}</td>
                   <td>{p.description}</td>
@@ -97,6 +111,22 @@ export default function Admin() {
           </tbody>
         </table>
       </div>
+
+
+      {/* Send success popup */}
+      {panelOpen && (
+      <SidePanel title="Payment" onClose={() => setPanelOpen(false)}>
+        <TransactionPanel
+          onClose={() => setPanelOpen(false)}
+          onBlockSender={() => {
+            setPanelOpen(false);
+          }}
+          onBlockReceiver={() => {
+            setPanelOpen(false);
+          }}
+        />
+      </SidePanel>
+      )}
     </div>
   );
 }

@@ -1,0 +1,60 @@
+.transaction-panel {
+  padding: 1.5rem 1rem;
+  font-size: 1rem;
+}
+
+.transaction-panel > div {
+  margin-bottom: 0.75rem;
+}
+
+.transaction-panel-divider {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1.5px solid var(--border, #e0e0e0);
+}
+
+.block-btn {
+  background-color: var(--error);
+  color: var(--black);
+  border: 3px solid var(--error);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.block-btn:hover {
+  transform: translateY(-2px);
+  border: 3px solid #d41515;
+  background-color: var(--error);
+}
+
+.unblock-btn {
+  background-color: var(--success);
+  color: var(--black);
+  border: 3px solid var(--success);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.unblock-btn:hover {
+  transform: translateY(-2px);
+  border: 3px solid #1ceb01;
+  background-color: var(--success);
+}
+
+.transaction-user-block {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.transaction-user-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 200px;
+}
