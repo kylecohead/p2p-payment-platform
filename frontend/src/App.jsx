@@ -4,14 +4,14 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Topup from "./pages/Topup";
 import Send from "./pages/Send";
-import Payments from './pages/Payments';
-import Layout from './components/Layout';
-import Admin from './pages/Admin';
-import Beneficiaries from './pages/Beneficiaries';
+import Payments from "./pages/Payments";
+import Layout from "./components/Layout";
+import Admin from "./pages/Admin";
+import Beneficiaries from "./pages/Beneficiaries";
 import NotFound from "./pages/NotFound";
-import { SSEProvider } from './contexts/SSEContext';
+import { SSEProvider } from "./contexts/SSEContext";
 import Restricted from "./pages/Restricted";
-import './App.css'
+import "./App.css";
 
 function App() {
   return (
@@ -23,8 +23,9 @@ function App() {
         {/* Page not found */}
         <Route path="*" element={<NotFound />} />
         {/* Restricted access */}
-      <Route path="/restricted" element={<Restricted />} />
-      {/* Authenticated shell */}
+        <Route path="/restricted" element={<Restricted />} />
+
+        {/* Authenticated shell */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/topup" element={<Topup />} />
@@ -32,10 +33,10 @@ function App() {
           <Route path="/send" element={<Send />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/beneficiaries" element={<Beneficiaries />} />
-      </Route>
+        </Route>
       </Routes>
     </SSEProvider>
-  )
+  );
 }
 
-export default App
+export default App;
