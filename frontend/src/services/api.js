@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000'; /*change to your own one for frontend*/
+const API_BASE_URL = 'http://100.102.145.100:8000'; /*change to your own one for frontend*/
 
 class ApiService {
   // Login method

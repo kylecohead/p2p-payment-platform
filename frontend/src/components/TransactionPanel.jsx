@@ -164,8 +164,11 @@ export default function TransactionPanel({
       {/* Sender Section */}
       <div className="transaction-user-section">
         <div className="user-info">
-          <strong>Sender:</strong> {transactionDetails.sender.name} ({transactionDetails.sender.email})
-          {senderBlocked && <span className="blocked-badge"> BLOCKED</span>}
+          <div className="user-label">
+            <strong>Receiver:</strong>
+            {senderBlocked && <p className="blocked-badge">BLOCKED</p>}
+          </div>
+          <p>{transactionDetails.receiver.name} ({transactionDetails.receiver.email})</p>
         </div>
         <button
           className={senderBlocked ? "unblock-btn" : "block-btn"}
@@ -180,8 +183,11 @@ export default function TransactionPanel({
       {/* Receiver Section */}
       <div className="transaction-user-section">
         <div className="user-info">
-          <strong>Receiver:</strong> {transactionDetails.receiver.name} ({transactionDetails.receiver.email})
-          {receiverBlocked && <span className="blocked-badge"> BLOCKED</span>}
+          <div className="user-label">
+            <strong>Receiver:</strong>
+            {receiverBlocked && <p className="blocked-badge">BLOCKED</p>}
+          </div>
+          <p>{transactionDetails.receiver.name} ({transactionDetails.receiver.email})</p>
         </div>
         <button
           className={receiverBlocked ? "unblock-btn" : "block-btn"}

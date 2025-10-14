@@ -81,6 +81,10 @@
   color: var(--text-secondary);
 }
 
+.failed-to-fetch {
+  text-align: center;
+}
+
 .error-message {
   color: var(--error, #f44336);
   background-color: #fee;

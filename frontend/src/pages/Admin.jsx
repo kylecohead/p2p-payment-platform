@@ -183,7 +183,7 @@ export default function Admin() {
       {loading && payments.length === 0 ? (
         <div className="loading-message">Loading transactions...</div>
       ) : error ? (
-        <div className="error-message">{error}</div>
+        <div className="failed-to-fetch">{error}</div>
       ) : (
         <>
           <div className="payments-cards card-grid">
