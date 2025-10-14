@@ -200,14 +200,15 @@ class ApiService {
 
   // Block an account (sender or receiver)
   async blockAccount(accountId, blockType, reason = null) {
-    const response = await fetch(`${API_BASE_URL}/api/admin/block-account`, {
+    // Build URL with query parameters
+    let url = `${API_BASE_URL}/api/admin/block-account?account_id=${accountId}&block_type=${blockType}`;
+    if (reason) {
+      url += `&reason=${encodeURIComponent(reason)}`;
+    }
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        account_id: accountId,
-        block_type: blockType,
-        reason: reason
-      }),
     });
 
     if (!response.ok) {
@@ -219,13 +220,12 @@ class ApiService {
 
   // Unblock an account
   async unblockAccount(accountId, blockType) {
-    const response = await fetch(`${API_BASE_URL}/api/admin/unblock-account`, {
+    // Build URL with query parameters
+    const url = `${API_BASE_URL}/api/admin/unblock-account?account_id=${accountId}&block_type=${blockType}`;
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        account_id: accountId,
-        block_type: blockType
-      }),
     });
 
     if (!response.ok) {
