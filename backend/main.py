@@ -457,27 +457,25 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             db.rollback()
             raise HTTPException(status_code=404, detail="Sender or recipient account not found")
 
-        # Check if sender is blocked from sending
+        # Check if sender has ANY block (SENDER or RECIPIENT type blocks both prevent all transactions)
         sender_block = db.query(Block).filter(
-            Block.block_type == BlockType.SENDER,
             Block.subject_account_id == sender.id,
             Block.removed_at.is_(None)
         ).first()
         
         if sender_block:
             db.rollback()
-            raise HTTPException(status_code=403, detail=f"Sender account is blocked: {sender_block.reason}")
+            raise HTTPException(status_code=403, detail=f"Sender account is blocked from all transactions: {sender_block.reason}")
         
-        # Check if recipient is blocked from receiving
+        # Check if recipient has ANY block (SENDER or RECIPIENT type blocks both prevent all transactions)
         recipient_block = db.query(Block).filter(
-            Block.block_type == BlockType.RECIPIENT,
             Block.subject_account_id == recipient.id,
             Block.removed_at.is_(None)
         ).first()
         
         if recipient_block:
             db.rollback()
-            raise HTTPException(status_code=403, detail=f"Recipient account is blocked: {recipient_block.reason}")
+            raise HTTPException(status_code=403, detail=f"Recipient account is blocked from all transactions: {recipient_block.reason}")
 
         # Evaluate rules against the locked snapshot
         allowed, alerts, violations = RuleEngine.evaluate(
@@ -685,14 +683,13 @@ def list_all_transactions(
         has_alert = len(alerts) > 0
         alert_cleared = all(a.cleared for a in alerts) if alerts else False
         
-        # Check if sender or recipient is blocked
+        # Check if sender or recipient is currently blocked (for informational display only)
         sender_blocked = False
         recipient_blocked = False
         
         if sender_account:
             sender_block = db.query(Block).filter(
                 Block.subject_account_id == sender_account.id,
-                Block.block_type == BlockType.SENDER,
                 Block.removed_at.is_(None)
             ).first()
             sender_blocked = sender_block is not None
@@ -700,27 +697,27 @@ def list_all_transactions(
         if recipient_account:
             recipient_block = db.query(Block).filter(
                 Block.subject_account_id == recipient_account.id,
-                Block.block_type == BlockType.RECIPIENT,
                 Block.removed_at.is_(None)
             ).first()
             recipient_blocked = recipient_block is not None
         
-        # Determine overall status
+        # Determine display status based ONLY on transaction data at time of transaction
+        # Current block status does NOT affect past transaction display status
         if has_alert and not alert_cleared:
-            overall_status = "Flagged"
-        elif sender_blocked or recipient_blocked:
-            overall_status = "Blocked"
+            display_status = "Flagged"
         else:
-            overall_status = "Succeeded"
+            display_status = "Succeeded"
         
         # Apply status filter if provided
-        if status_filter and overall_status != status_filter:
+        if status_filter and display_status != status_filter:
             continue
             
         result.append({
             "id": tx.id,
             "code": tx.reference or f"TX{tx.id:06d}",
-            "status": overall_status,
+            "status": display_status,  # Based only on alerts, not current block status
+            "has_alerts": has_alert,
+            "alerts_cleared": alert_cleared,
             "description": tx.description or "Payment transfer",
             "time": tx.created_at.strftime("%H:%M"),
             "date": tx.created_at.strftime("%Y-%m-%d"),
