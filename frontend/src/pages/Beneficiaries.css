@@ -29,3 +29,26 @@
   padding: 1rem;
   border-bottom: 1px solid var(--gray-200);
 }
+
+.beneficiaries-table tbody tr:hover {
+  background-color: var(--surface-hover);
+  cursor: pointer;
+}
+
+.loading-state, .error-state, .empty-state {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error-state {
+  color: var(--error);
+}
+
+.error-state .btn {
+  margin-top: 1rem;
+}
+
+.empty-state {
+  font-style: italic;
+}
