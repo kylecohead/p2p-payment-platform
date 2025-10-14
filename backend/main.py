@@ -482,22 +482,72 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             db, sender=sender, recipient=recipient, amount=amount
         )
 
-        # Not allowed: rollback to drop locks, then persist alerts separately and return 409
-        if not allowed:
-            db.rollback()                       # release row locks
-            for a in alerts:
-                db.add(a)
-            db.commit()     
-            message = "Violations: " + ", ".join(violations)
-            raise HTTPException(status_code=409, detail=message)
-
-        # Allowed: move funds + create transaction atomically under the same lock
         # Generate unique reference for this transaction
         unique_reference = PaymentReferenceService.generate_unique_reference(db)
         
         # Use description from payload or create default
         description = payload.description or "Payment transfer"
-        
+
+        # Not allowed: create blocked transaction record, persist alerts, and return 409
+        if not allowed:
+            # Create transaction record with "blocked" status
+            tx = Transaction(
+                sender_id=sender.id,
+                recipient_id=recipient.id,
+                amount=amount,
+                currency="ZAR",
+                status="blocked",  # Mark as blocked
+                kind="transfer",
+                method=payload.method,
+                reference=unique_reference,
+                description=description,
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+            )
+            db.add(tx)
+            db.flush()  # assign ID to tx
+            
+            # Link alerts to the blocked transaction
+            for a in alerts:
+                a.transaction_id = tx.id
+                db.add(a)
+            
+            db.commit()  # Commit blocked transaction and alerts
+            
+            # Send real-time notification to admin users about the blocked transaction
+            try:
+                sender_user = db.query(User).filter(User.id == sender.user_id).first()
+                recipient_user = db.query(User).filter(User.id == recipient.user_id).first()
+                
+                admin_users = db.query(User).filter(User.admin == True).all()
+                notification_tasks = []
+                for admin in admin_users:
+                    notification_tasks.append(
+                        notification_manager.notify(
+                            admin.id,
+                            "admin_transaction_update",
+                            {
+                                "transaction_id": tx.id,
+                                "transaction_code": unique_reference,
+                                "sender": sender_user.name if sender_user else "Unknown",
+                                "recipient": recipient_user.name if recipient_user else "Unknown",
+                                "amount": float(amount),
+                                "description": description,
+                                "status": "blocked",
+                                "has_alerts": True
+                            }
+                        )
+                    )
+                
+                # Execute notifications
+                await asyncio.gather(*notification_tasks, return_exceptions=True)
+            except Exception as e:
+                print(f"Error sending blocked transaction notifications: {e}")
+            
+            message = "Violations: " + ", ".join(violations)
+            raise HTTPException(status_code=409, detail=message)
+
+        # Allowed: move funds + create transaction atomically under the same lock
         tx = Transaction(
             sender_id=sender.id,
             recipient_id=recipient.id,
@@ -701,9 +751,11 @@ def list_all_transactions(
             ).first()
             recipient_blocked = recipient_block is not None
         
-        # Determine display status based ONLY on transaction data at time of transaction
-        # Current block status does NOT affect past transaction display status
-        if has_alert and not alert_cleared:
+        # Determine display status based on transaction data
+        # Priority: Database blocked status > Flagged > Succeeded
+        if tx.status == "blocked":
+            display_status = "Blocked"  # Transaction was blocked by rules at creation time
+        elif has_alert and not alert_cleared:
             display_status = "Flagged"
         else:
             display_status = "Succeeded"
@@ -715,7 +767,7 @@ def list_all_transactions(
         result.append({
             "id": tx.id,
             "code": tx.reference or f"TX{tx.id:06d}",
-            "status": display_status,  # Based only on alerts, not current block status
+            "status": display_status,  # Based on tx.status and alerts
             "has_alerts": has_alert,
             "alerts_cleared": alert_cleared,
             "description": tx.description or "Payment transfer",
