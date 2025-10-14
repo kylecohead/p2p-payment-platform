@@ -562,6 +562,30 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
                 )
             )
 
+        # Notify all admin users about the new transaction
+        try:
+            admin_users = db.query(User).filter(User.admin == True).all()
+            for admin in admin_users:
+                # Don't send duplicate notification if admin is sender or recipient
+                if admin.id not in [sender_user.id if sender_user else None, recipient_user.id if recipient_user else None]:
+                    notification_tasks.append(
+                        notification_manager.notify(
+                            admin.id,
+                            "admin_transaction_update",
+                            {
+                                "transaction_id": tx.id,
+                                "transaction_code": unique_reference,
+                                "sender": sender_user.name if sender_user else "Unknown",
+                                "recipient": recipient_user.name if recipient_user else "Unknown",
+                                "amount": float(amount),
+                                "description": description,
+                                "has_alerts": len(alerts) > 0
+                            }
+                        )
+                    )
+        except Exception as e:
+            print(f"Error preparing admin notifications: {e}")
+
         # Execute notifications in background
         try:
             print(f"Executing {len(notification_tasks)} notification tasks")

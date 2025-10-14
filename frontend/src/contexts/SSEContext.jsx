@@ -120,22 +120,26 @@ export const SSEProvider = ({ children }) => {
     setIsConnected(false);
   }, []);
 
-  // Connect SSE when user is available
+  // Connect SSE when user is available - use refs to avoid recreating the function
   const connectSSE = useCallback((userId) => {
     // Prevent duplicate connections for the same user
     if (currentUserId === userId && isConnected) {
+      console.log(`SSEContext: Already connected to user ${userId}`);
       return;
     }
 
     // Prevent multiple simultaneous connection attempts
     if (connectionAttemptRef.current) {
+      console.log(`SSEContext: Connection attempt already in progress for user ${userId}`);
       return;
     }
 
+    console.log(`SSEContext: Starting connection for user ${userId}`);
     connectionAttemptRef.current = true;
 
     // Disconnect any existing connection first
     if (currentUserId && currentUserId !== userId) {
+      console.log(`SSEContext: Disconnecting existing connection for user ${currentUserId}`);
       SSEService.disconnect();
       setIsConnected(false);
       setCurrentUserId(null);
@@ -147,6 +151,7 @@ export const SSEProvider = ({ children }) => {
         SSEService.connect(userId, handleSSEMessage, handleSSEError);
         setCurrentUserId(userId);
         setIsConnected(true);
+        console.log(`SSEContext: Connected successfully to user ${userId}`);
       } finally {
         connectionAttemptRef.current = false;
       }
