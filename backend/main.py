@@ -457,6 +457,28 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
             db.rollback()
             raise HTTPException(status_code=404, detail="Sender or recipient account not found")
 
+        # Check if sender is blocked from sending
+        sender_block = db.query(Block).filter(
+            Block.block_type == BlockType.SENDER,
+            Block.subject_account_id == sender.id,
+            Block.removed_at.is_(None)
+        ).first()
+        
+        if sender_block:
+            db.rollback()
+            raise HTTPException(status_code=403, detail=f"Sender account is blocked: {sender_block.reason}")
+        
+        # Check if recipient is blocked from receiving
+        recipient_block = db.query(Block).filter(
+            Block.block_type == BlockType.RECIPIENT,
+            Block.subject_account_id == recipient.id,
+            Block.removed_at.is_(None)
+        ).first()
+        
+        if recipient_block:
+            db.rollback()
+            raise HTTPException(status_code=403, detail=f"Recipient account is blocked: {recipient_block.reason}")
+
         # Evaluate rules against the locked snapshot
         allowed, alerts, violations = RuleEngine.evaluate(
             db, sender=sender, recipient=recipient, amount=amount
@@ -828,26 +850,42 @@ async def block_account_by_type(
     except KeyError:
         raise HTTPException(status_code=400, detail="Invalid block_type. Must be SENDER or RECIPIENT")
     
-    # Check if block already exists
-    existing_block = db.query(Block).filter(
+    # Check if an active block already exists
+    existing_active_block = db.query(Block).filter(
         Block.block_type == block_type_enum,
         Block.subject_account_id == account_id,
         Block.removed_at.is_(None)
     ).first()
     
-    if existing_block:
-        return {"ok": True, "id": existing_block.id, "message": "Block already exists"}
+    if existing_active_block:
+        return {"ok": True, "id": existing_active_block.id, "message": "Block already exists"}
     
-    # Create new block
-    b = Block(
-        block_type=block_type_enum,
-        subject_account_id=account_id,
-        reason=reason or "Admin action",
-        created_at=datetime.now(timezone.utc)
-    )
-    db.add(b)
-    db.commit()
-    db.refresh(b)
+    # Check if a removed block exists (due to unique constraint)
+    existing_removed_block = db.query(Block).filter(
+        Block.block_type == block_type_enum,
+        Block.subject_account_id == account_id,
+        Block.removed_at.isnot(None)
+    ).first()
+    
+    if existing_removed_block:
+        # Reactivate the existing block instead of creating a new one
+        existing_removed_block.removed_at = None
+        existing_removed_block.reason = reason or "Admin action"
+        existing_removed_block.created_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(existing_removed_block)
+        b = existing_removed_block
+    else:
+        # Create new block
+        b = Block(
+            block_type=block_type_enum,
+            subject_account_id=account_id,
+            reason=reason or "Admin action",
+            created_at=datetime.now(timezone.utc)
+        )
+        db.add(b)
+        db.commit()
+        db.refresh(b)
     
     # Send notification to affected user
     try:
