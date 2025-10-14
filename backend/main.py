@@ -613,6 +613,92 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
         raise
 
 # Admin: alerts & blocks
+@app.get("/api/admin/transactions")
+def list_all_transactions(
+    status_filter: Optional[str] = None, 
+    limit: int = 200,
+    db: Session = Depends(get_db)
+):
+    """Get all transactions for admin view with enriched data including alerts and blocks"""
+    # Get transactions
+    q = db.query(Transaction)
+    q = q.order_by(Transaction.created_at.desc()).limit(limit)
+    transactions = q.all()
+    
+    result = []
+    for tx in transactions:
+        # Get sender and recipient users
+        sender_account = db.query(Account).filter(Account.id == tx.sender_id).first()
+        recipient_account = db.query(Account).filter(Account.id == tx.recipient_id).first()
+        
+        sender_user = db.query(User).filter(User.id == sender_account.user_id).first() if sender_account else None
+        recipient_user = db.query(User).filter(User.id == recipient_account.user_id).first() if recipient_account else None
+        
+        # Check for alerts on this transaction
+        alerts = db.query(Alert).filter(Alert.transaction_id == tx.id).all()
+        has_alert = len(alerts) > 0
+        alert_cleared = all(a.cleared for a in alerts) if alerts else False
+        
+        # Check if sender or recipient is blocked
+        sender_blocked = False
+        recipient_blocked = False
+        
+        if sender_account:
+            sender_block = db.query(Block).filter(
+                Block.subject_account_id == sender_account.id,
+                Block.block_type == BlockType.SENDER,
+                Block.removed_at.is_(None)
+            ).first()
+            sender_blocked = sender_block is not None
+        
+        if recipient_account:
+            recipient_block = db.query(Block).filter(
+                Block.subject_account_id == recipient_account.id,
+                Block.block_type == BlockType.RECIPIENT,
+                Block.removed_at.is_(None)
+            ).first()
+            recipient_blocked = recipient_block is not None
+        
+        # Determine overall status
+        if has_alert and not alert_cleared:
+            overall_status = "Flagged"
+        elif sender_blocked or recipient_blocked:
+            overall_status = "Blocked"
+        else:
+            overall_status = "Succeeded"
+        
+        # Apply status filter if provided
+        if status_filter and overall_status != status_filter:
+            continue
+            
+        result.append({
+            "id": tx.id,
+            "code": tx.reference or f"TX{tx.id:06d}",
+            "status": overall_status,
+            "description": tx.description or "Payment transfer",
+            "time": tx.created_at.strftime("%H:%M"),
+            "date": tx.created_at.strftime("%Y-%m-%d"),
+            "amount": float(tx.amount),
+            "currency": tx.currency,
+            "sender": {
+                "account_id": sender_account.id if sender_account else None,
+                "user_id": sender_user.id if sender_user else None,
+                "name": sender_user.name if sender_user else "Unknown",
+                "email": sender_user.email if sender_user else "unknown@email.com",
+                "blocked": sender_blocked
+            },
+            "receiver": {
+                "account_id": recipient_account.id if recipient_account else None,
+                "user_id": recipient_user.id if recipient_user else None,
+                "name": recipient_user.name if recipient_user else "Unknown",
+                "email": recipient_user.email if recipient_user else "unknown@email.com",
+                "blocked": recipient_blocked
+            },
+            "alerts": [{"id": a.id, "code": a.code, "message": a.message, "cleared": a.cleared} for a in alerts]
+        })
+    
+    return {"transactions": result, "total_count": len(result)}
+
 @app.get("/api/admin/alerts")
 def list_alerts(cleared: Optional[bool] = None, db: Session = Depends(get_db)):
     q = db.query(Alert); 
@@ -633,18 +719,177 @@ class BlockIn(BaseModel):
     block_type: BlockType; subject_account_id: int; reason: Optional[str] = None
 
 @app.post("/api/admin/block")
-def create_block(payload: BlockIn, db: Session = Depends(get_db)):
-    b = Block(block_type=payload.block_type, subject_account_id=payload.subject_account_id,
-              reason=payload.reason, created_at=datetime.now(timezone.utc))
-    db.add(b); db.commit()
+async def create_block(payload: BlockIn, db: Session = Depends(get_db)):
+    """Create a block on an account (sender or receiver)"""
+    # Check if block already exists
+    existing_block = db.query(Block).filter(
+        Block.block_type == payload.block_type,
+        Block.subject_account_id == payload.subject_account_id,
+        Block.removed_at.is_(None)
+    ).first()
+    
+    if existing_block:
+        return {"ok": True, "id": existing_block.id, "message": "Block already exists"}
+    
+    b = Block(
+        block_type=payload.block_type, 
+        subject_account_id=payload.subject_account_id,
+        reason=payload.reason, 
+        created_at=datetime.now(timezone.utc)
+    )
+    db.add(b)
+    db.commit()
+    db.refresh(b)
+    
+    # Send notification to affected user
+    try:
+        account = db.query(Account).filter(Account.id == payload.subject_account_id).first()
+        if account:
+            user = db.query(User).filter(User.id == account.user_id).first()
+            if user:
+                await notification_manager.notify(
+                    user.id,
+                    "account_blocked",
+                    {
+                        "block_type": payload.block_type.value,
+                        "reason": payload.reason or "Admin action",
+                        "account_id": payload.subject_account_id
+                    }
+                )
+    except Exception as e:
+        print(f"Failed to send block notification: {e}")
+    
     return {"ok": True, "id": b.id}
 
 @app.post("/api/admin/unblock/{block_id}")
-def remove_block(block_id: int, db: Session = Depends(get_db)):
+async def remove_block(block_id: int, db: Session = Depends(get_db)):
+    """Remove a block by block ID"""
     b = db.query(Block).get(block_id)
-    if not b: raise HTTPException(status_code=404, detail="Block not found")
-    if b.removed_at is None: b.removed_at = datetime.now(timezone.utc); db.commit()
+    if not b: 
+        raise HTTPException(status_code=404, detail="Block not found")
+    if b.removed_at is None: 
+        b.removed_at = datetime.now(timezone.utc)
+        db.commit()
+        
+        # Send notification to affected user
+        try:
+            account = db.query(Account).filter(Account.id == b.subject_account_id).first()
+            if account:
+                user = db.query(User).filter(User.id == account.user_id).first()
+                if user:
+                    await notification_manager.notify(
+                        user.id,
+                        "account_unblocked",
+                        {
+                            "block_type": b.block_type.value,
+                            "account_id": b.subject_account_id
+                        }
+                    )
+        except Exception as e:
+            print(f"Failed to send unblock notification: {e}")
+    
     return {"ok": True}
+
+@app.post("/api/admin/block-account")
+async def block_account_by_type(
+    account_id: int, 
+    block_type: str,
+    reason: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Block an account by account_id and block type (SENDER or RECIPIENT)"""
+    # Validate block_type
+    try:
+        block_type_enum = BlockType[block_type.upper()]
+    except KeyError:
+        raise HTTPException(status_code=400, detail="Invalid block_type. Must be SENDER or RECIPIENT")
+    
+    # Check if block already exists
+    existing_block = db.query(Block).filter(
+        Block.block_type == block_type_enum,
+        Block.subject_account_id == account_id,
+        Block.removed_at.is_(None)
+    ).first()
+    
+    if existing_block:
+        return {"ok": True, "id": existing_block.id, "message": "Block already exists"}
+    
+    # Create new block
+    b = Block(
+        block_type=block_type_enum,
+        subject_account_id=account_id,
+        reason=reason or "Admin action",
+        created_at=datetime.now(timezone.utc)
+    )
+    db.add(b)
+    db.commit()
+    db.refresh(b)
+    
+    # Send notification to affected user
+    try:
+        account = db.query(Account).filter(Account.id == account_id).first()
+        if account:
+            user = db.query(User).filter(User.id == account.user_id).first()
+            if user:
+                await notification_manager.notify(
+                    user.id,
+                    "account_blocked",
+                    {
+                        "block_type": block_type_enum.value,
+                        "reason": reason or "Admin action",
+                        "account_id": account_id
+                    }
+                )
+    except Exception as e:
+        print(f"Failed to send block notification: {e}")
+    
+    return {"ok": True, "id": b.id, "block_type": block_type_enum.value}
+
+@app.post("/api/admin/unblock-account")
+async def unblock_account_by_type(
+    account_id: int,
+    block_type: str,
+    db: Session = Depends(get_db)
+):
+    """Unblock an account by account_id and block type"""
+    # Validate block_type
+    try:
+        block_type_enum = BlockType[block_type.upper()]
+    except KeyError:
+        raise HTTPException(status_code=400, detail="Invalid block_type. Must be SENDER or RECIPIENT")
+    
+    # Find active block
+    block = db.query(Block).filter(
+        Block.block_type == block_type_enum,
+        Block.subject_account_id == account_id,
+        Block.removed_at.is_(None)
+    ).first()
+    
+    if not block:
+        return {"ok": True, "message": "No active block found"}
+    
+    # Remove block
+    block.removed_at = datetime.now(timezone.utc)
+    db.commit()
+    
+    # Send notification to affected user
+    try:
+        account = db.query(Account).filter(Account.id == account_id).first()
+        if account:
+            user = db.query(User).filter(User.id == account.user_id).first()
+            if user:
+                await notification_manager.notify(
+                    user.id,
+                    "account_unblocked",
+                    {
+                        "block_type": block_type_enum.value,
+                        "account_id": account_id
+                    }
+                )
+    except Exception as e:
+        print(f"Failed to send unblock notification: {e}")
+    
+    return {"ok": True, "block_id": block.id}
 
 # Helper function to check admin status
 def check_admin_user(user_id: int, db: Session) -> bool:

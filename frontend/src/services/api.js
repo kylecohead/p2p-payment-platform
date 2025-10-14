@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://100.102.145.100:8000'; /*change to your own one for frontend*/
+const API_BASE_URL = 'http://localhost:8000'; /*change to your own one for frontend*/
 
 class ApiService {
   // Login method
@@ -142,6 +142,135 @@ class ApiService {
       throw new Error(error.detail || 'Failed to fetch payment history');
     }
     return response.json();
+  }
+
+  // Admin API calls
+  
+  // Get all transactions for admin view
+  async getAdminTransactions(statusFilter = null, limit = 200) {
+    let url = `${API_BASE_URL}/api/admin/transactions?limit=${limit}`;
+    if (statusFilter) {
+      url += `&status_filter=${statusFilter}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch admin transactions');
+    }
+    return response.json();
+  }
+
+  // Get all alerts
+  async getAlerts(cleared = null) {
+    let url = `${API_BASE_URL}/api/admin/alerts`;
+    if (cleared !== null) {
+      url += `?cleared=${cleared}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch alerts');
+    }
+    return response.json();
+  }
+
+  // Clear an alert
+  async clearAlert(alertId) {
+    const response = await fetch(`${API_BASE_URL}/api/admin/alerts/${alertId}/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to clear alert');
+    }
+    return response.json();
+  }
+
+  // Block an account (sender or receiver)
+  async blockAccount(accountId, blockType, reason = null) {
+    const response = await fetch(`${API_BASE_URL}/api/admin/block-account`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_id: accountId,
+        block_type: blockType,
+        reason: reason
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to block account');
+    }
+    return response.json();
+  }
+
+  // Unblock an account
+  async unblockAccount(accountId, blockType) {
+    const response = await fetch(`${API_BASE_URL}/api/admin/unblock-account`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_id: accountId,
+        block_type: blockType
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to unblock account');
+    }
+    return response.json();
+  }
+
+  // Export flagged payments CSV
+  async exportFlaggedPayments(userId, includeCleared = false) {
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/export-flagged-payments?user_id=${userId}&include_cleared=${includeCleared}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'text/csv' },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to export CSV');
+    }
+    
+    // Return the blob for download
+    return response.blob();
+  }
+
+  // Export active blocks CSV
+  async exportActiveBlocks(userId) {
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/export-active-blocks?user_id=${userId}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'text/csv' },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to export CSV');
+    }
+    
+    // Return the blob for download
+    return response.blob();
   }
 }
 
