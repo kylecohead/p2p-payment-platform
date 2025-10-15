@@ -13,7 +13,7 @@ variables:
 .branch_and_mr_rules: &branch_and_mr_rules
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|dev-frontend|dev-sprint3)$/'
+    - if: "$CI_COMMIT_BRANCH =~ /^(main|dev-frontend|dev-sprint3)$/"
     - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
 
 # Global caches (scoped per lockfile / branch)
@@ -42,7 +42,7 @@ test_backend:
     - cd backend
     - pip install -r requirements.txt
     - pip install -r requirements-dev.txt
-    - pip install "bcrypt<4" --upgrade  # mitigate bcrypt build issues on CI
+    - pip install "bcrypt<4" --upgrade # mitigate bcrypt build issues on CI
     - pip freeze | grep -E 'passlib|bcrypt' || true
     - mkdir -p tests/tmp
     - |
@@ -96,12 +96,7 @@ test_frontend:
     paths:
       - frontend/coverage/
     expire_in: 30 days
-  only:
-    - merge_requests
-    - main
-    - dev-frontend
-    - dev-sprint3
-    - /^feature\/.*$/
+  # Branch/merge request selection is handled via the shared rules anchor
 
 # Build the application
 build:
@@ -109,7 +104,7 @@ build:
   image: node:${NODE_VERSION}
   tags: [shared-docker-runner]
   <<: *branch_and_mr_rules
-  needs: ["test_frontend"]  # only build FE after tests pass
+  needs: ["test_frontend"] # only build FE after tests pass
   cache:
     key:
       files:
@@ -126,8 +121,4 @@ build:
     paths:
       - frontend/dist/
     expire_in: 1 week
-  only:
-    - merge_requests
-    - main
-    - dev-frontend
-    - /^feature\/.*$/
+  # Branch/merge request selection is handled via the shared rules anchor
