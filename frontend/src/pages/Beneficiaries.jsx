@@ -18,7 +18,9 @@ export default function Beneficiaries() {
   // Get current user ID from localStorage
   const getCurrentUserId = () => {
     try {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      const currentUser = JSON.parse(
+        localStorage.getItem("currentUser") || "{}"
+      );
       return currentUser.id;
     } catch (e) {
       return null;
@@ -31,16 +33,16 @@ export default function Beneficiaries() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const userId = getCurrentUserId();
         if (!userId) {
-          throw new Error('User not logged in');
+          throw new Error("User not logged in");
         }
 
         const response = await ApiService.getBeneficiaries(userId);
         setBeneficiaries(response.beneficiaries || []);
       } catch (err) {
-        console.error('Failed to fetch beneficiaries:', err);
+        console.error("Failed to fetch beneficiaries:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -70,11 +72,7 @@ export default function Beneficiaries() {
 
       <div className="page-header-with-actions">
         <h1 className="page-title">Beneficiaries</h1>
-        <div className="page-actions">
-          <button className="btn btn-outline">
-            Export
-          </button>
-        </div>
+        <div className="page-actions">{/* Export button removed*/}</div>
       </div>
 
       {/* Beneficiaries Table */}
@@ -86,7 +84,7 @@ export default function Beneficiaries() {
         ) : error ? (
           <div className="error-state">
             <p>Error loading beneficiaries: {error}</p>
-            <button 
+            <button
               className="btn btn-outline"
               onClick={() => window.location.reload()}
             >
@@ -95,7 +93,10 @@ export default function Beneficiaries() {
           </div>
         ) : beneficiaries.length === 0 ? (
           <div className="empty-state">
-            <p>No beneficiaries found. Send a payment to someone to add them as a beneficiary.</p>
+            <p>
+              No beneficiaries found. Send a payment to someone to add them as a
+              beneficiary.
+            </p>
           </div>
         ) : (
           <table className="beneficiaries-table">
@@ -119,7 +120,11 @@ export default function Beneficiaries() {
                 >
                   <td>{b.name}</td>
                   <td>{b.email}</td>
-                  <td>{b.last_used_at ? new Date(b.last_used_at).toLocaleDateString() : 'Never'}</td>
+                  <td>
+                    {b.last_used_at
+                      ? new Date(b.last_used_at).toLocaleDateString()
+                      : "Never"}
+                  </td>
                   <td>{b.usage_count || 0}</td>
                 </tr>
               ))}
@@ -130,7 +135,10 @@ export default function Beneficiaries() {
 
       {/* Payment panel */}
       {panelOpen && selectedBeneficiary && (
-        <SidePanel title={`Send to ${selectedBeneficiary.name}`} onClose={() => setPanelOpen(false)}>
+        <SidePanel
+          title={`Send to ${selectedBeneficiary.name}`}
+          onClose={() => setPanelOpen(false)}
+        >
           <SendPanel
             recipientEmail={selectedBeneficiary.email}
             onCancel={() => setPanelOpen(false)}
@@ -140,9 +148,11 @@ export default function Beneficiaries() {
               // Refresh beneficiaries list to update usage count
               const userId = getCurrentUserId();
               if (userId) {
-                ApiService.getBeneficiaries(userId).then(response => {
-                  setBeneficiaries(response.beneficiaries || []);
-                }).catch(console.error);
+                ApiService.getBeneficiaries(userId)
+                  .then((response) => {
+                    setBeneficiaries(response.beneficiaries || []);
+                  })
+                  .catch(console.error);
               }
             }}
           />

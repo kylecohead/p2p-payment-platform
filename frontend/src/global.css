@@ -563,6 +563,11 @@ select:focus {
     border-color var(--transition-speed) ease;
   display: flex;
   flex-direction: column;
+  /* Keep sidebar pinned while page content scrolls */
+  position: sticky;
+  top: 0;
+  height: 95vh;
+  overflow: auto;
 }
 
 .sidePanel ul {
@@ -577,7 +582,7 @@ select:focus {
 
 /* Sidebar theme toggle section */
 .sidebar-theme-toggle {
-  margin-top: auto;
+  /* Keep theme toggle visible inside the sticky sidebar */
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
 }
