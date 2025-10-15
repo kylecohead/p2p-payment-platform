@@ -144,6 +144,20 @@ class ApiService {
     return response.json();
   }
 
+  // Get beneficiaries for a user
+  async getBeneficiaries(clientId) {
+    const response = await fetch(`${API_BASE_URL}/api/beneficiaries/${clientId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch beneficiaries');
+    }
+    return response.json();
+  }
+
   // Admin API calls
   
   // Get all transactions for admin view
