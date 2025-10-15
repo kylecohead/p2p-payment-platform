@@ -25,6 +25,45 @@ cache:
   paths:
     - .npm/
 
+# ----- Backend -----
+
+test_backend:
+  stage: test
+  image: python:3.11
+  tags: [shared-docker-runner]
+  <<: *branch_and_mr_rules
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-pip-v2"
+    paths:
+      - .cache/pip/
+  before_script:
+    - python --version
+    - pip install --upgrade pip
+    - cd backend
+    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
+    - pip install "bcrypt<4" --upgrade  # mitigate bcrypt build issues on CI
+    - pip freeze | grep -E 'passlib|bcrypt' || true
+    - mkdir -p tests/tmp
+    - |
+      cat > .env <<EOF
+      DATABASE_URL=${DATABASE_URL:-sqlite:///./tests/tmp/test.db}
+      SECRET_KEY=${SECRET_KEY}
+      EOF
+  script:
+    - pytest -q --junitxml=pytest-report.xml --cov=src --cov-report=term --cov-report=xml:coverage.xml
+  artifacts:
+    when: always
+    reports:
+      junit: backend/pytest-report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    paths:
+      - backend/pytest-report.xml
+      - backend/coverage.xml
+    expire_in: 30 days
+
 # ----- Frontend -----
 
 test_frontend:
