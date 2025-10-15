@@ -43,17 +43,21 @@ export default function Layout() {
 
   // Connect to SSE when user is loaded
   useEffect(() => {
-    if (user?.user_id) {
-      connectSSE(user.user_id);
+    if (user?.id) {
+      console.log(`Layout: Connecting SSE for user ID ${user.id}`);
+      connectSSE(user.id);
     }
 
     // Cleanup: disconnect SSE when component unmounts or user changes
     return () => {
-      if (user?.user_id) {
+      if (user?.id) {
+        console.log(`Layout: Disconnecting SSE for user ID ${user.id}`);
         disconnectSSE();
       }
     };
-  }, [user?.user_id, connectSSE, disconnectSSE]);
+    // Only depend on user.id, not the functions (they should be stable)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     // Apply theme to document root
