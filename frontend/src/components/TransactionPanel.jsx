@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import "./TransactionPanel.css";
 import ApiService from "../services/api";
+import Popup from "./Popup";
+import SparkleOverlay from "./SparkleOverlay";
 
 export default function TransactionPanel({
   onClose,
@@ -15,6 +17,8 @@ export default function TransactionPanel({
   const [receiverBlocked, setReceiverBlocked] = useState(
     transactionDetails?.receiver?.blocked || false
   );
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState({ blackText: "", greenText: "" });
 
   // Handle blocking sender
   const handleBlockSender = async () => {
@@ -34,7 +38,11 @@ export default function TransactionPanel({
           "SENDER"
         );
         setSenderBlocked(false);
-        alert(`${transactionDetails.sender.name} has been unblocked from sending payments`);
+        setPopupMessage({
+          blackText: `${transactionDetails.sender.name}`,
+          greenText: "unblocked!"
+        });
+        setShowPopup(true);
       } else {
         // Block sender
         await ApiService.blockAccount(
@@ -43,7 +51,11 @@ export default function TransactionPanel({
           `Blocked via transaction ${transactionDetails.code}`
         );
         setSenderBlocked(true);
-        alert(`${transactionDetails.sender.name} has been blocked from sending payments`);
+        setPopupMessage({
+          blackText: `${transactionDetails.sender.name}`,
+          greenText: "blocked!"
+        });
+        setShowPopup(true);
       }
       
       // Notify parent to refresh data
@@ -76,7 +88,11 @@ export default function TransactionPanel({
           "RECIPIENT"
         );
         setReceiverBlocked(false);
-        alert(`${transactionDetails.receiver.name} has been unblocked from receiving payments`);
+        setPopupMessage({
+          blackText: `${transactionDetails.receiver.name}`,
+          greenText: "unblocked!"
+        });
+        setShowPopup(true);
       } else {
         // Block receiver
         await ApiService.blockAccount(
@@ -85,7 +101,11 @@ export default function TransactionPanel({
           `Blocked via transaction ${transactionDetails.code}`
         );
         setReceiverBlocked(true);
-        alert(`${transactionDetails.receiver.name} has been blocked from receiving payments`);
+        setPopupMessage({
+          blackText: `${transactionDetails.receiver.name}`,
+          greenText: "blocked!"
+        });
+        setShowPopup(true);
       }
       
       // Notify parent to refresh data
@@ -113,6 +133,15 @@ export default function TransactionPanel({
 
   return (
     <div className="transaction-panel">
+      {/* Block/Unblock notification popup */}
+      <SparkleOverlay show={showPopup} />
+      <Popup
+        blackText={popupMessage.blackText}
+        greenText={popupMessage.greenText}
+        showPopup={showPopup}
+        setShowPopup={setShowPopup}
+      />
+
       <h2>Transaction Details</h2>
       
       {error && (
