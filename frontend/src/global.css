@@ -265,7 +265,7 @@ h3 {
 
 .btn.btn-outline:hover {
   background: var(--primary);
-  color: var(--white);
+  color: var(--text-primary);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(68, 173, 114, 0.25);
 }
