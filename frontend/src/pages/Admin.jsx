@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
 import SidePanel from "../components/SidePanel";
+import SparkleOverlay from "../components/SparkleOverlay";
+import Popup from "../components/Popup";
 import TransactionPanel from "../components/TransactionPanel";
 import ApiService from "../services/api";
 import { useSSE } from "../contexts/SSEContext";
@@ -15,6 +17,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [blockPopupOpen, setBlockPopupOpen] = useState(false);
+  const [unblockPopupOpen, setUnblockPopupOpen] = useState(false);
 
   // Load current user from localStorage
   useEffect(() => {
@@ -57,6 +61,14 @@ export default function Admin() {
       setLoading(false);
     }
   };
+
+  function onBlockPopupClose() {
+    setBlockPopupOpen(false);
+  }
+
+  function onUnblockPopupClose() {
+    setUnblockPopupOpen(false);
+  }
 
   // Initial data load
   useEffect(() => {
@@ -160,6 +172,28 @@ export default function Admin() {
 
   return (
     <div className="">
+      {/* Block success popup */}
+      <SparkleOverlay show={blockPopupOpen} />
+      <Popup
+        blackText="User successfully"
+        greenText="blocked!"
+        textRed={true}
+        showPopup={blockPopupOpen}
+        setShowPopup={setBlockPopupOpen}
+        onClose={() => onBlockPopupClose()}
+      />
+
+      {/* Unblock success popup */}
+      <SparkleOverlay show={unblockPopupOpen} />
+      <Popup
+        blackText="User successfully"
+        greenText="unblocked!"
+        showPopup={unblockPopupOpen}
+        setShowPopup={setUnblockPopupOpen}
+        onClose={() => onUnblockPopupClose()}
+      />
+
+
       <div className="page-header-with-actions">
         <h1 className="page-title">Admin Panel</h1>
         <div className="page-actions">
@@ -270,6 +304,14 @@ export default function Admin() {
             onClose={() => setPanelOpen(false)}
             transactionDetails={selectedTransaction}
             onUpdate={handleTransactionUpdate}
+            onSuccessBlock={() => {
+              setPanelOpen(false)
+              setBlockPopupOpen(true);
+            }}
+            onSuccessUnblock={() => {
+              setPanelOpen(false)
+              setUnblockPopupOpen(true);
+            }}
           />
         </SidePanel>
       )}

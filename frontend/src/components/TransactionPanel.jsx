@@ -8,6 +8,8 @@ export default function TransactionPanel({
   onClose,
   transactionDetails,
   onUpdate,
+  onSuccessBlock,
+  onSuccessUnblock,
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -43,6 +45,7 @@ export default function TransactionPanel({
           greenText: "unblocked!"
         });
         setShowPopup(true);
+        onSuccessUnblock();
       } else {
         // Block sender
         await ApiService.blockAccount(
@@ -56,6 +59,7 @@ export default function TransactionPanel({
           greenText: "blocked!"
         });
         setShowPopup(true);
+        onSuccessBlock();
       }
       
       // Notify parent to refresh data
@@ -93,6 +97,7 @@ export default function TransactionPanel({
           greenText: "unblocked!"
         });
         setShowPopup(true);
+        onSuccessUnblock();
       } else {
         // Block receiver
         await ApiService.blockAccount(
@@ -106,6 +111,7 @@ export default function TransactionPanel({
           greenText: "blocked!"
         });
         setShowPopup(true);
+        onSuccessBlock();
       }
       
       // Notify parent to refresh data
@@ -133,14 +139,6 @@ export default function TransactionPanel({
 
   return (
     <div className="transaction-panel">
-      {/* Block/Unblock notification popup */}
-      <SparkleOverlay show={showPopup} />
-      <Popup
-        blackText={popupMessage.blackText}
-        greenText={popupMessage.greenText}
-        showPopup={showPopup}
-        setShowPopup={setShowPopup}
-      />
 
       <h2>Transaction Details</h2>
       

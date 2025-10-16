@@ -2,7 +2,8 @@ import React from "react";
 import "./Popup.css";
 import SafePayLogo from "../assets/SafePayLogo.png";
 
-export default function Popup({ blackText, greenText, onClose, showPopup, setShowPopup }) {
+
+export default function Popup({ blackText, greenText, textRed = false, onClose, showPopup, setShowPopup }) {
 
   // Close the popup and navigate if needed
   const handleClose = () => {
@@ -22,13 +23,18 @@ export default function Popup({ blackText, greenText, onClose, showPopup, setSho
       {/* Popup content */}
       <div className="popup-box">
         <div className="popup-content">
-            <img src={SafePayLogo} alt="" />
-            <h2 className="popup-message">
-                {blackText} <span className="green-text">{greenText}</span>
-            </h2>
-            <button className="btn" style={{ width: "100%" }} onClick={handleClose}>
+          <div
+            className="logo-popup"
+            style={{ fontWeight: 600 }}
+          >
+            SafePay+
+          </div>
+          <h2 className="popup-message">
+            {blackText} <span className={textRed ? "red-text" : "green-text"}>{greenText}</span>
+          </h2>
+          <button className="btn" style={{ width: "100%" }} onClick={handleClose}>
             Close
-            </button>
+          </button>
         </div>
       </div>
     </div>
