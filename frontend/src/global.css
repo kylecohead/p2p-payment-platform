@@ -642,7 +642,7 @@ html[data-theme="dark"] .nav-link.active {
   /* Keep sidebar pinned while page content scrolls */
   position: sticky;
   top: 0;
-  overflow: auto;
+  overflow: visible;
   z-index: 10;
 }
 
