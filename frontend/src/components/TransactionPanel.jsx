@@ -192,10 +192,10 @@ export default function TransactionPanel({
       <div className="transaction-user-section">
         <div className="user-info">
           <div className="user-label">
-            <strong>Receiver:</strong>
+            <strong>Sender:</strong>
             {senderBlocked && <p className="blocked-badge">BLOCKED</p>}
           </div>
-          <p>{transactionDetails.receiver.name} ({transactionDetails.receiver.email})</p>
+          <p>{transactionDetails.sender.name} ({transactionDetails.sender.email})</p>
         </div>
         <button
           className={senderBlocked ? "unblock-btn" : "block-btn"}
