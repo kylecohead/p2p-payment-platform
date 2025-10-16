@@ -565,8 +565,8 @@ select:focus {
   flex-direction: column;
   /* Keep sidebar pinned while page content scrolls */
   position: sticky;
-  top: 0;
-  height: 95vh;
+  top: 60px;
+  height: calc(100vh - 60px);
   overflow: auto;
 }
 
@@ -639,6 +639,11 @@ html[data-theme="dark"] .nav-link.active {
   padding: 1rem;
   transition: background-color var(--transition-speed) ease,
     border-color var(--transition-speed) ease;
+  /* Keep sidebar pinned while page content scrolls */
+  position: sticky;
+  top: 0;
+  overflow: auto;
+  z-index: 10;
 }
 
 .logo {
