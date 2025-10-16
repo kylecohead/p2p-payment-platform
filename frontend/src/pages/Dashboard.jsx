@@ -106,26 +106,7 @@ export default function Dashboard() {
 
     let aborted = false;
 
-    // Separate function to load payment history
-    async function loadPaymentHistory() {
-      if (aborted) return;
-      try {
-        const hist = await ApiService.getPaymentHistory(parsed.id, 100);
-        const payment_history = hist && hist.payment_history ? hist.payment_history : [];
-        
-        if (!aborted) {
-          setUser((u) => ({ ...(u || {}), recent_payment_history: payment_history }));
-          try {
-            const stored2 = JSON.parse(localStorage.getItem("currentUser") || "{}");
-            localStorage.setItem("currentUser", JSON.stringify({ ...stored2, recent_payment_history: payment_history }));
-          } catch (e) {}
-        }
-      } catch (e) {
-        console.error("Payment history load failed", e);
-      }
-    }
-
-    // Fetch client info and today's payments once.
+    // Fetch client info which includes payment history
     async function loadClientAndPayments() {
       if (aborted) return;
       try {
@@ -142,8 +123,6 @@ export default function Dashboard() {
       } catch (e) {
         console.error("Initial client load failed", e);
       }
-
-      await loadPaymentHistory();
     }
 
     // Run data loading

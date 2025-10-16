@@ -81,12 +81,9 @@ class NotificationManager:
         """Send notification to all subscribers of a client"""
         if self._shutdown:
             return  # Don't send notifications during shutdown
-            
-        print(f"NotificationManager: Attempting to notify client {client_id} with event {event_type}")
         
         async with self.lock:
             if client_id in self.subscribers:
-                print(f"NotificationManager: Found {len(self.subscribers[client_id])} subscribers for client {client_id}")
                 message = {
                     "type": event_type,
                     "client_id": client_id,
@@ -98,22 +95,16 @@ class NotificationManager:
                 for client_queue in self.subscribers[client_id].copy():
                     try:
                         await client_queue.put(message)
-                        print(f"NotificationManager: Successfully sent notification to client {client_id}")
                     except Exception as e:
                         # Mark queue for removal (client disconnected)
-                        print(f"NotificationManager: Failed to send to client {client_id}: {e}")
                         dead_queues.append(client_queue)
                 
                 # Remove dead queues
                 for dead_queue in dead_queues:
                     self.subscribers[client_id].discard(dead_queue)
-            else:
-                print(f"NotificationManager: No subscribers found for client {client_id}")
-                print(f"NotificationManager: Current subscribers: {list(self.subscribers.keys())}")
     
     async def shutdown(self):
         """Shutdown notification manager and close all connections"""
-        print("NotificationManager: Starting shutdown...")
         self._shutdown = True
         
         async with self.lock:
@@ -122,15 +113,14 @@ class NotificationManager:
                 for queue in queues:
                     try:
                         await queue.put({"type": "shutdown"})
-                    except Exception as e:
-                        print(f"Error sending shutdown signal to client {client_id}: {e}")
+                    except:
+                        pass
             
             # Give a moment for messages to be processed
             await asyncio.sleep(0.1)
             
             # Clear all subscribers
             self.subscribers.clear()
-            print("NotificationManager: Shutdown complete")
 
 # Global notification manager instance
 notification_manager = NotificationManager()
@@ -305,10 +295,8 @@ async def get_events(client_id: int):
                     
                     # Handle shutdown signal
                     if message.get("type") == "shutdown":
-                        print(f"SSE client {client_id} received shutdown signal")
                         break
                         
-                    print(f"SSE: Sending message to client {client_id}: {message.get('type')}")
                     yield f"data: {json.dumps(message)}\n\n"
                 except asyncio.TimeoutError:
                     # Send keepalive ping every 1 second and check shutdown
@@ -591,14 +579,11 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
         sender_user = db.query(User).filter(User.id == sender.user_id).first()
         recipient_user = db.query(User).filter(User.id == recipient.user_id).first()
         
-        print(f"Transaction completed: Sender user {sender_user.id if sender_user else 'None'}, Recipient user {recipient_user.id if recipient_user else 'None'}")
-        
         # Create notification tasks but don't await them to avoid blocking
         notification_tasks = []
         
         # Notify sender
         if sender_user:
-            print(f"Preparing notification for sender {sender_user.id}")
             notification_tasks.append(
                 notification_manager.notify(
                     sender_user.id,
@@ -616,7 +601,6 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
         
         # Notify recipient  
         if recipient_user:
-            print(f"Preparing notification for recipient {recipient_user.id}")
             notification_tasks.append(
                 notification_manager.notify(
                     recipient_user.id,
@@ -658,9 +642,7 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
 
         # Execute notifications in background
         try:
-            print(f"Executing {len(notification_tasks)} notification tasks")
             await asyncio.gather(*notification_tasks, return_exceptions=True)
-            print("Notifications sent successfully")
         except Exception as e:
             print(f"Notification error: {e}")
 
