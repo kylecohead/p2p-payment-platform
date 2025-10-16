@@ -663,7 +663,9 @@ async def create_transfer(payload: TransferIn, db: Session = Depends(get_db)):
                         name=recipient_user_obj.name,
                         email=recipient_user_obj.email,
                         account_id=recipient.id,
-                        account_number=getattr(recipient, 'account_number', None)
+                        account_number=getattr(recipient, 'account_number', None),
+                        last_used_at=datetime.now(timezone.utc),
+                        usage_count=1
                     )
                     db.add(b)
                     db.commit()

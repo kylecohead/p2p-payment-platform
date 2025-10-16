@@ -20,6 +20,7 @@ This README describes the product, how to run it locally, testing and CI details
 - [Environment variables](#environment-variables)
 - [Coding style & linting](#coding-style--linting)
 - [Contributing](#contributing)
+- [Beneficiaries management](#beneficiaries-management)
 - [Troubleshooting & tips](#troubleshooting--tips)
 - [License & authorship](#license--authorship)
 
@@ -63,7 +64,16 @@ The dedicated admin panel supports efficient oversight and allows for immediate 
 - All blocking actions are **immediately enforced** to stop suspicious transactions in real time and are logged for audit purposes.
 - The admin panel can **Export alerts CSV** for analysis.
 
-### 3. P2P Payment Interface & Tech
+### 3. Beneficiaries Management
+
+Automated beneficiary tracking to improve user experience:
+
+- **Auto-Add Beneficiaries:** When users send money to someone for the first time, they are automatically added as a beneficiary.
+- **Beneficiaries List:** Dedicated page showing all past recipients with usage statistics.
+- **Quick Pay:** Click any beneficiary to instantly open the payment panel with their details pre-filled.
+- **Usage Tracking:** Displays last payment date and total payment count for each beneficiary.
+
+### 4. P2P Payment Interface & Tech
 
 - **User Management:** User registration and login using **Email + password** with **bcrypt hashing**.
 - **P2P Core:** A functional **Send Money UI** (with recipient autocomplete and notes) and automated **Receive Money** (auto-credit on sender confirmation).
@@ -74,8 +84,23 @@ The dedicated admin panel supports efficient oversight and allows for immediate 
 
 ## Repo layout
 
-- `frontend/` — React app (components, pages, services, tests)
-- `backend/` — Python backend, Alembic migrations, scripts
+```
+├── frontend/           # React + Vite frontend
+│   ├── src/
+│   │   ├── components/ # Reusable UI components
+│   │   ├── pages/      # Main application pages
+│   │   ├── services/   # API communication
+│   │   └── contexts/   # React context providers
+│   └── tests/          # Frontend unit tests
+├── backend/            # FastAPI Python backend
+│   ├── src/
+│   │   ├── models/     # SQLAlchemy database models
+│   │   ├── services/   # Business logic services
+│   │   └── config/     # Database configuration
+│   ├── alembic/        # Database migrations
+│   └── scripts/        # Utility scripts and seeders
+└── README.md
+```
 
 ## Requirements
 
@@ -86,14 +111,65 @@ The dedicated admin panel supports efficient oversight and allows for immediate 
 
 ## Install and run locally
 
-1. Clone the repository and install dependencies
+### Backend Setup
 
 ```bash
-git clone <repo-url>
-cd Waluigi-RW344
+cd backend
 
-# Frontend
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up database (PostgreSQL required)
+# Update backend/.env with your database URL
+alembic upgrade head
+
+# Run the server
+python3 main.py
+```
+
+Backend will be available at `http://localhost:8000`
+
+### Frontend Setup
+
+```bash
 cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Frontend will be available at `http://your-ip-here:5173`
+
+## Environment variables
+
+### Backend (.env file)
+
+Create a `backend/.env` file with:
+
+```bash
+DATABASE_URL="postgresql+psycopg2://user:password@host:port/database"
+API_HOST=0.0.0.0
+API_PORT=8000
+```
+
+### Frontend
+
+Update `frontend/src/services/api.js` with your backend URL:
+
+```javascript
+const API_BASE_URL = 'http://your-ip-here:8000'; // Update for production
+```
+
+## Frontend scripts
+
+```bash
 npm test                 # Watch mode
 npm run test:ci          # Run once with coverage
 npm run test:ui          # Visual UI
@@ -111,6 +187,28 @@ The pipeline automatically runs on push to `main`, `dev-frontend`, `dev-sprint3`
 4. **Build**: Builds production-ready application
 
 **Coverage Reports**: Available as CI/CD artifacts for 30 days in Cobertura, HTML, and JSON formats.
+
+## API Endpoints
+
+### User Authentication
+- `POST /api/login` - User login
+- `POST /api/signup` - User registration
+- `GET /api/client/{id}` - Get user details
+
+### Payments
+- `POST /api/send/{client_id}` - Send money to another user
+- `POST /api/topup/{client_id}` - Add money to account
+- `GET /api/payment-history/{client_id}` - Get transaction history
+
+### Beneficiaries
+- `GET /api/beneficiaries/{client_id}` - List user's beneficiaries
+
+### Admin (requires admin privileges)
+- `GET /api/admin/alerts` - List all alerts
+- `POST /api/admin/alerts/{id}/clear` - Clear an alert
+- `POST /api/admin/block` - Block a user account
+- `GET /api/admin/export-flagged-payments` - Export flagged transactions as CSV
+- `GET /api/admin/export-active-blocks` - Export active blocks as CSV
 
 ### Test Files
 
