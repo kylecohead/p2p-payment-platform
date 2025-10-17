@@ -20,8 +20,13 @@ export default function Send() {
         return;
       }
 
-      await ApiService.sendMoney(userData.id, amount, recipientEmail, description);
-      
+      await ApiService.sendMoney(
+        userData.id,
+        amount,
+        recipientEmail,
+        description
+      );
+
       // Update user data in localStorage
       const updatedUser = await ApiService.getClient(userData.id);
       localStorage.setItem("currentUser", JSON.stringify(updatedUser));
@@ -48,9 +53,7 @@ export default function Send() {
       {!submitted ? (
         <>
           <h2>Send Money</h2>
-          {error && (
-            <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-          )}
+          {error && <div className="text-danger mb-4">{error}</div>}
           <form className="send-form" onSubmit={handleSubmit}>
             <div>
               <label>Recipient Email:</label>
@@ -77,7 +80,7 @@ export default function Send() {
               <input
                 type="text"
                 value={description}
-                onChange={e => setDescription(e.target.value)}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="What's this payment for?"
               />
             </div>

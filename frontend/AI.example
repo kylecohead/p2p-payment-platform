@@ -1,0 +1,3 @@
+# Google Gemini API Key, put this line in you .env file, never push this file
+# Get your free API key at: https://makersuite.google.com/app/apikey
+VITE_GEMINI_API_KEY=your_actual_key_here

@@ -4,8 +4,13 @@
   color: var(--gray-700);
 }
 
-.btn-outline:hover { 
-  background: var(--gray-200); 
+.btn-outline:hover:not(:disabled) {
+  background: var(--gray-200);
+}
+
+.btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Color overrides for payment cards - base style in global.css */
@@ -22,12 +27,14 @@
 }
 
 /* Table placeholder spacing */
-.admin-table-container { 
+.admin-table-container {
   margin-top: 1rem;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .payments-section {
@@ -40,15 +47,88 @@
 }
 
 .admin-table th {
-  background: var(--gray-200);
+  background: var(--surface);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
   font-size: 0.8rem;
-  border-bottom: 1px solid var(--gray-200);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  transition: background-color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
 }
 
 .admin-table td {
   padding: 1rem;
   border-bottom: 1px solid var(--gray-200);
+}
+
+.admin-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.admin-table-row:hover {
+  background: var(--surface);
+  transition: background-color var(--transition-speed) ease;
+}
+
+/* Loading and error states */
+.loading-message,
+.error-message {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.failed-to-fetch {
+  text-align: center;
+}
+
+.error-message {
+  color: var(--error, #f44336);
+  background-color: #fee;
+  border: 1px solid var(--error, #f44336);
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.admin-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.admin-error h2 {
+  color: var(--error, #f44336);
+  margin-bottom: 1rem;
+}
+
+.admin-error p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Status text colors */
+.text-success {
+  color: var(--success, #4caf50);
+  font-weight: 600;
+}
+
+.text-warning {
+  color: var(--warning, #ff9800);
+  font-weight: 600;
+}
+
+.text-danger {
+  color: var(--error, #f44336);
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
 }

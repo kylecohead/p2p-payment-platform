@@ -3,3 +3,4 @@ from .account import Account
 from .transaction import Transaction
 from .alert import Alert
 from .block import Block, BlockType
+from .beneficiary import Beneficiary

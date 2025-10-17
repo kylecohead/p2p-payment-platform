@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SidePanel from "../components/SidePanel";
 import SendPanel from "../components/SendPanel";
-import Popup from '../components/Popup';
+import Popup from "../components/Popup";
+import SparkleOverlay from "../components/SparkleOverlay";
 import "./Payments.css";
 import ApiService from "../services/api";
+import { useSSE } from "../contexts/SSEContext";
 
 export default function Payments() {
   const navigate = useNavigate();
@@ -13,44 +15,99 @@ export default function Payments() {
   const [error, setError] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [sendPopupOpen, setSendPopupOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("date_time");
+  const [sortOrder, setSortOrder] = useState("desc"); // "asc" or "desc"
+  const { addEventListener } = useSSE();
+
+  const fetchPaymentHistory = async () => {
+    try {
+      setLoading(true);
+      const userData = JSON.parse(localStorage.getItem("currentUser"));
+      if (!userData) {
+        navigate("/login");
+        return;
+      }
+
+      console.log("Payments: Fetching payment history...");
+      const response = await ApiService.getPaymentHistory(userData.id);
+      setPayments(response.payment_history || []);
+      setError(""); // Clear any previous errors
+    } catch (err) {
+      console.error("Failed to fetch payment history:", err);
+      setError("Failed to load payment history");
+      setPayments([]); // Fallback to empty array
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPaymentHistory = async () => {
-      try {
-        const userData = JSON.parse(localStorage.getItem("currentUser"));
-        if (!userData) {
-          navigate("/login");
-          return;
-        }
-
-        const response = await ApiService.getPaymentHistory(userData.id);
-        setPayments(response.payment_history || []);
-      } catch (err) {
-        console.error("Failed to fetch payment history:", err);
-        setError("Failed to load payment history");
-        setPayments([]); // Fallback to empty array
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPaymentHistory();
   }, [navigate]);
 
-  // Closes the popup and navigates to /dashboard
+  // Set up real-time updates for payments
+  useEffect(() => {
+    console.log("Payments: Setting up real-time payment updates");
+    
+    const handleBalanceUpdate = async (data) => {
+      console.log("Payments: Received balance update, refreshing payment history", data);
+      await fetchPaymentHistory();
+    };
+
+    const handlePaymentUpdate = async (data) => {
+      console.log("Payments: Received payment update, refreshing payment history", data);
+      await fetchPaymentHistory();
+    };
+
+    // Subscribe to balance and payment updates
+    const unsubscribeBalance = addEventListener('balance_updated', handleBalanceUpdate);
+    const unsubscribePayment = addEventListener('payment_update', handlePaymentUpdate);
+
+    console.log("Payments: Event listeners set up");
+
+    // Cleanup subscriptions
+    return () => {
+      console.log("Payments: Cleaning up event listeners");
+      unsubscribeBalance();
+      unsubscribePayment();
+    };
+  }, [addEventListener]);
+
+  // Closes the popup and refreshes data (no page reload needed - real-time updates)
   function onSendPopupClose() {
     setSendPopupOpen(false);
-    window.location.reload();
+    // No need to reload page - real-time updates will handle it
   }
 
   const handleNewPayment = () => {
     setPanelOpen(true);
   };
 
-  const handleExport = () => {
-    // TODO: Backend export functionality
-    alert("Export functionality coming soon");
-  };
+  // Sorting logic
+  function getSortedPayments() {
+    const sorted = [...payments];
+    sorted.sort((a, b) => {
+      if (sortBy === "date_time") {
+        const aDT = new Date(`${a.date}T${a.time}`);
+        const bDT = new Date(`${b.date}T${b.time}`);
+        return sortOrder === "asc" ? aDT - bDT : bDT - aDT;
+      }
+      if (sortBy === "amount") {
+        return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount;
+      }
+      if (sortBy === "name") {
+        const aName = (a.name || "").toLowerCase();
+        const bName = (b.name || "").toLowerCase();
+        if (aName < bName) return sortOrder === "asc" ? -1 : 1;
+        if (aName > bName) return sortOrder === "asc" ? 1 : -1;
+        return 0;
+      }
+      return 0;
+    });
+    return sorted;
+  }
+
+  const sortedPayments = getSortedPayments();
 
   // Calculate totals
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -61,16 +118,19 @@ export default function Payments() {
 
   return (
     <div className="payments-page">
-
       {/* Send success popup */}
-      <Popup blackText="Payment " greenText="successful!" showPopup={sendPopupOpen} setShowPopup={setSendPopupOpen} onClose={onSendPopupClose} />
+      <SparkleOverlay show={sendPopupOpen} />
+      <Popup
+        blackText="Payment "
+        greenText="successful!"
+        showPopup={sendPopupOpen}
+        setShowPopup={setSendPopupOpen}
+        onClose={onSendPopupClose}
+      />
 
       <div className="page-header-with-actions">
         <h1 className="page-title">Payments</h1>
         <div className="page-actions">
-          <button className="btn btn-outline" onClick={handleExport}>
-            Export
-          </button>
           <button className="btn" onClick={handleNewPayment}>
             + New payment
           </button>
@@ -82,7 +142,10 @@ export default function Payments() {
           Loading payment history...
         </div>
       ) : error ? (
-        <div style={{ textAlign: "center", padding: "2rem", color: "red" }}>
+        <div
+          className="text-danger"
+          style={{ textAlign: "center", padding: "2rem" }}
+        >
           {error}
         </div>
       ) : (
@@ -107,10 +170,51 @@ export default function Payments() {
             </div>
           </div>
 
+          {/* Sort buttons */}
+          <div className="payments-sort-buttons">
+            <button
+              className={`sort-btn${sortBy === "date_time" ? " active" : ""}`}
+              onClick={() =>
+                setSortBy("date_time") ||
+                setSortOrder(sortBy === "date_time" && sortOrder === "desc" ? "asc" : "desc")
+              }
+            >
+              Date/Time
+              {sortBy === "date_time" ? (
+                <span>{sortOrder === "asc" ? " ▲" : " ▼"}</span>
+              ) : null}
+            </button>
+            <button
+              className={`sort-btn${sortBy === "amount" ? " active" : ""}`}
+              onClick={() =>
+                setSortBy("amount") ||
+                setSortOrder(sortBy === "amount" && sortOrder === "desc" ? "asc" : "desc")
+              }
+            >
+              Amount
+              {sortBy === "amount" ? (
+                <span>{sortOrder === "asc" ? " ▲" : " ▼"}</span>
+              ) : null}
+            </button>
+            <button
+              className={`sort-btn${sortBy === "name" ? " active" : ""}`}
+              onClick={() =>
+                setSortBy("name") ||
+                setSortOrder(sortBy === "name" && sortOrder === "desc" ? "asc" : "desc")
+              }
+            >
+              Name
+              {sortBy === "name" ? (
+                <span>{sortOrder === "asc" ? " ▲" : " ▼"}</span>
+              ) : null}
+            </button>
+          </div>
+
           <div className="payments-table-container">
             {payments.length === 0 ? (
               <div
-                style={{ textAlign: "center", padding: "3rem", color: "#666" }}
+                className="text-center text-muted"
+                style={{ padding: "3rem" }}
               >
                 No payment history yet. Make your first payment to see it here!
               </div>
@@ -128,7 +232,7 @@ export default function Payments() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((p, idx) => (
+                  {sortedPayments.map((p, idx) => (
                     <tr key={p.code || idx}>
                       <td>{p.code}</td>
                       <td>{p.type}</td>
@@ -137,10 +241,9 @@ export default function Payments() {
                       <td>{p.date}</td>
                       <td>{p.name}</td>
                       <td
-                        style={{
-                          color: p.amount < 0 ? "red" : "green",
-                          fontWeight: "bold",
-                        }}
+                        className={`font-bold ${
+                          p.amount < 0 ? "text-danger" : "text-success"
+                        }`}
                       >
                         {p.amount < 0 ? "-" : ""}R
                         {Math.abs(p.amount).toFixed(2)}

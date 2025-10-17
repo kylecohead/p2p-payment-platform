@@ -44,9 +44,7 @@ export default function Topup() {
       {!submitted ? (
         <>
           <h2>Top Up</h2>
-          {error && (
-            <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-          )}
+          {error && <div className="text-danger mb-4">{error}</div>}
           <form className="topup-form" onSubmit={handleSubmit}>
             <div>
               <label>Amount:</label>
