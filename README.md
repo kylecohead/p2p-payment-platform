@@ -1,250 +1,96 @@
-# Waluigi-RW344 (SafePay+)
+# SafePay+: Real-Time P2P Transaction Monitoring
 
-Student built demo project simulating a peer-to-peer payments application (**SafePay+**). This project's core feature is a **real-time transaction monitoring system** designed to flag potentially fraudulent activity. The repo contains a **React + Vite frontend** and a **Python backend** that provides user authentication, payments, transaction history, and a robust admin control panel.
-
-This README describes the product, how to run it locally, testing and CI details, and group contributions.
+SafePay+ is a lightweight, peer-to-peer (P2P) transaction monitoring system designed to flag potentially fraudulent activity in real time. Developed as a collaborative group project for the Computer Science 344 module, the application enables users to securely interact through a functional payment interface while providing administrators with robust oversight via a dedicated dashboard.
 
 ---
 
-## Table of Contents
+## My Contributions (Frontend Team)
 
-- [Project description](#project-description)
-- [Key features](#key-features)
-- [Repo layout](#repo-layout)
-- [Requirements](#requirements)
-- [Install and run locally](#install-and-run-locally)
-- [Frontend scripts](#frontend-scripts)
-- [Backend quick start](#backend-quick-start)
-- [Testing](#testing)
-- [CI / CD notes](#ci--cd-notes)
-- [Environment variables](#environment-variables)
-- [Coding style & linting](#coding-style--linting)
-- [Contributing](#contributing)
-- [Beneficiaries management](#beneficiaries-management)
-- [Troubleshooting & tips](#troubleshooting--tips)
-- [License & authorship](#license--authorship)
+As a member of the frontend team, I worked on the following areas:
+
+- **Component Engineering:** Developed reusable React components for the user dashboard and payment interfaces.
+- **State Management:** Assisted in implementing React context providers for consistent state across the application.
+- **Security Testing:** Contributed to the comprehensive security testing suite for the "Rob" chatbot, ensuring protection against prompt injection and social engineering attacks.
+- **UI/UX Refinement:** Collaborated on implementing light/dark mode and responsive, mobile-first design.
 
 ---
 
-## Project description
+## Core Features
 
-**SafePay+** is a lightweight **Peer-to-Peer (P2P) transaction monitoring system**. It's a student-built web application that demonstrates a fully functional P2P payment interface coupled with a real-time fraud detection mechanism.
+### 1. Real-Time Fraud Monitoring
 
-The system applies a simple, heuristic-based **rule engine** to every outgoing transfer, focusing on transfer amounts, frequency, recipient history, and balance impact. If any rule is triggered, an immediate alert is generated and surfaced to both the user and the administrators.
+The system applies a heuristic-based rule engine to every outgoing transfer to detect risky behaviour instantly. The following rules are enforced:
 
-For administrators, the project features a **protected control panel** for efficient oversight, alert management, and the ability to enforce actions like **blocking a sender or recipient** to immediately stop suspicious activity.
+| Rule | Condition |
+|---|---|
+| Large Transfer | Flagged if a single transfer exceeds R5,000 |
+| High Frequency | Flagged if a sender initiates more than 3 transfers within 60 seconds |
+| Balance Impact | Flagged if a transfer results in a zero or negative balance |
+| Daily Limit | Flagged if total amount sent in a single day exceeds R10,000 |
 
-The project also features a chatbot assistant named **Rob** with a security-first prompt and suggested questions, designed to only answer user-facing SafePay+ questions and to defend against prompt-injection and unsafe requests.
+Triggered rules generate an immediate inline alert for the user and are persisted for administrative review.
 
----
+### 2. Administrative Oversight
 
-## Key features
+The protected Admin Control Panel provides tools for fraud prevention:
 
-The SafePay+ application is built around two core functional pillars: secure P2P payments and real-time fraud monitoring.
+- **Transaction Auditing:** View and filter transaction history by user or date.
+- **Account Restrictions:** Admins can block a sender (preventing outgoing transfers) or block a recipient (preventing incoming transfers).
+- **Data Export:** Export flagged transactions and active blocks as CSV files for offline analysis.
 
-### 1. Real-Time Fraud Monitoring (Rule Engine)
+### 3. User Features
 
-The rule engine is designed to flag potentially unusual or risky transaction behavior in real time. It applies five simple heuristics to each outgoing transfer:
-
-- **Large Transfers:** Flagged if the transfer amount exceeds **R5000**.
-- **High Frequency:** Flagged for **more than 3 transfers** from the same sender within **60 seconds**.
-- **Balance Impact:** Flagged for any transfer that would result in a **negative balance** or a **0 balance**.
-- **Daily Limit:** Flagged if the total amount sent for the day exceeds **R10000**.
-- Alerts are displayed via an **inline banner** on the user dashboard and persisted in an `Alerts` table for administrative review.
-
-### 2. Admin Control Panel (Protected Route)
-
-The dedicated admin panel supports efficient oversight and allows for immediate fraud prevention actions:
-
-- **View & Filter** transactions by user/date and manage alerts.
-- **Mark alerts "cleared"** for efficient workflow.
-- **Block Sender:** Prevents the selected user from initiating any further transfers.
-- **Block Recipient:** Prevents transfers from any user to the selected recipient.
-- **Unblock:** Admin can revoke blocks once the user is cleared.
-- All blocking actions are **immediately enforced** to stop suspicious transactions in real time and are logged for audit purposes.
-- The admin panel can **Export alerts CSV** for analysis.
-
-### 3. Beneficiaries Management
-
-Automated beneficiary tracking to improve user experience:
-
-- **Auto-Add Beneficiaries:** When users send money to someone for the first time, they are automatically added as a beneficiary.
-- **Beneficiaries List:** Dedicated page showing all past recipients with usage statistics.
-- **Quick Pay:** Click any beneficiary to instantly open the payment panel with their details pre-filled.
-- **Usage Tracking:** Displays last payment date and total payment count for each beneficiary.
-
-### 4. P2P Payment Interface & Tech
-
-- **User Management:** User registration and login using **Email + password** with **bcrypt hashing**.
-- **P2P Core:** A functional **Send Money UI** (with recipient autocomplete and notes) and automated **Receive Money** (auto-credit on sender confirmation).
-- **Dashboard:** Provides the user's **Current balance** and a sortable **Transaction history** (sent/received).
-- **Non-Functional:** The code is designed for **maintainability** (comments, unit tests) and **usability** (responsive web UI).
+- **"Rob" AI Chatbot:** A security-first assistant designed to answer user-facing questions while defending against prompt injection attacks.
+- **Beneficiaries Management:** Automated tracking of recipients with Quick Pay functionality and usage statistics.
+- **Interactive Visualisations:** A canvas-based payment network graph to track transaction flows.
 
 ---
 
-## Repo layout
+## Tech Stack
 
-```
-├── frontend/           # React + Vite frontend
-│   ├── src/
-│   │   ├── components/ # Reusable UI components
-│   │   ├── pages/      # Main application pages
-│   │   ├── services/   # API communication
-│   │   └── contexts/   # React context providers
-│   └── tests/          # Frontend unit tests
-├── backend/            # FastAPI Python backend
-│   ├── src/
-│   │   ├── models/     # SQLAlchemy database models
-│   │   ├── services/   # Business logic services
-│   │   └── config/     # Database configuration
-│   ├── alembic/        # Database migrations
-│   └── scripts/        # Utility scripts and seeders
-└── README.md
-```
+| Layer | Technology |
+|---|---|
+| Frontend | React 18+ (Vite), Tailwind CSS, Vitest |
+| Backend | Python 3.10+, FastAPI |
+| Database | PostgreSQL, SQLAlchemy (ORM), Alembic |
+| DevOps | Docker, GitLab CI/CD (linting, testing, building) |
 
-## Requirements
+---
 
-- Node.js (recommended v20 LTS)
-- npm
-- Python 3.10+ (or as listed in `backend/requirements.txt`)
-- Optional: Docker for containerized runs
-
-## Install and run locally
+## Getting Started
 
 ### Backend Setup
 
 ```bash
 cd backend
-
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Set up database (PostgreSQL required)
-# Update backend/.env with your database URL
+# Update backend/.env with your PostgreSQL DATABASE_URL
 alembic upgrade head
-
-# Run the server
 python3 main.py
 ```
 
-Backend will be available at `http://localhost:8000`
+The backend service will run at `http://localhost:8000`.
 
 ### Frontend Setup
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-Frontend will be available at `http://your-ip-here:5173`
+The frontend interface will be available at `http://localhost:5173`.
 
-## Environment variables
+---
 
-### Backend (.env file)
+## Testing and Quality Assurance
 
-Create a `backend/.env` file with:
+The project implements a rigorous testing strategy to ensure maintainability and security:
 
-```bash
-DATABASE_URL="postgresql+psycopg2://user:password@host:port/database"
-API_HOST=0.0.0.0
-API_PORT=8000
-```
+- **Security Focus:** 20+ dedicated tests for the chatbot to guard against social engineering and prompt injection.
+- **Component Testing:** Unit tests for modals, login forms, and transaction components using `@testing-library/react`.
+- **Continuous Integration:** The GitLab CI/CD pipeline automatically enforces ESLint code quality checks and coverage thresholds on every push to the `main` or `dev` branches.
 
-### Frontend
-
-Update `frontend/src/services/api.js` with your backend URL:
-
-```javascript
-const API_BASE_URL = 'http://your-ip-here:8000'; // Update for production
-```
-
-## Frontend scripts
-
-```bash
-npm test                 # Watch mode
-npm run test:ci          # Run once with coverage
-npm run test:ui          # Visual UI
-npm run test:watch       # Watch mode (alias)
-npm run coverage:check   # Run coverage and enforce thresholds
-```
-
-### GitLab CI/CD Pipeline
-
-The pipeline automatically runs on push to `main`, `dev-frontend`, `dev-sprint3`, and merge requests:
-
-1. **Install**: Installs dependencies with npm caching
-2. **Lint**: Runs ESLint code quality checks (parallel)
-3. **Test**: Executes unit tests with coverage reports (parallel)
-4. **Build**: Builds production-ready application
-
-**Coverage Reports**: Available as CI/CD artifacts for 30 days in Cobertura, HTML, and JSON formats.
-
-## API Endpoints
-
-### User Authentication
-- `POST /api/login` - User login
-- `POST /api/signup` - User registration
-- `GET /api/client/{id}` - Get user details
-
-### Payments
-- `POST /api/send/{client_id}` - Send money to another user
-- `POST /api/topup/{client_id}` - Add money to account
-- `GET /api/payment-history/{client_id}` - Get transaction history
-
-### Beneficiaries
-- `GET /api/beneficiaries/{client_id}` - List user's beneficiaries
-
-### Admin (requires admin privileges)
-- `GET /api/admin/alerts` - List all alerts
-- `POST /api/admin/alerts/{id}/clear` - Clear an alert
-- `POST /api/admin/block` - Block a user account
-- `GET /api/admin/export-flagged-payments` - Export flagged transactions as CSV
-- `GET /api/admin/export-active-blocks` - Export active blocks as CSV
-
-### Test Files
-
-- `tests/components/Chatbot.security.test.jsx` - **🔒 Security Tests** (20 tests)
-  - Prompt injection attacks
-  - Admin feature disclosure protection
-  - Social engineering defenses
-  - Malicious code injection protection
-  - API safety response handling
-  - Input validation & sanitization
-  - Configuration security
-- `tests/pages/Login.test.jsx` - Login form, mascot, password visibility
-- `tests/pages/LandingPage.test.jsx` - Branding, buttons, navigation
-- `tests/pages/NotFound.test.jsx` - 404 error page
-- `tests/components/TurtleMascot.test.jsx` - Robot mascot, visor states
-- `tests/components/Popup.test.jsx` - Modal component
-- `tests/components/PaymentNetwork.test.jsx` - Canvas visualization
-
-### Writing Tests
-
-Test files: `*.test.jsx` alongside components
-
-```javascript
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import MyComponent from "./MyComponent";
-
-describe("MyComponent", () => {
-  it("should render and handle interactions", async () => {
-    const user = userEvent.setup();
-    render(<MyComponent />);
-
-    const button = screen.getByRole("button", { name: /click me/i });
-    await user.click(button);
-
-    expect(screen.getByText(/success/i)).toBeInTheDocument();
-  });
-});
-```
+---
